@@ -258,13 +258,29 @@
     </div>
 
     <div id="seccionChecadas" class="seccion">
-      <h4>📅 Checadas por fecha</h4>
-      <form id="formFecha">
-        <input type="date" id="fechaBuscada" required>
-        <button type="submit">Buscar</button>
-      </form>
-      <table id="tablaChecadas"></table>
-    </div>
+  <h4>📅 Checadas por fecha</h4>
+  <form id="formFecha">
+    <label>Fecha:</label>
+    <input type="date" id="fechaBuscada" required><br>
+
+    <label>Filtrar por empleado (opcional):</label>
+    <input type="text" id="filtroNombre" placeholder="Ej. Julio"><br>
+
+    <label>Filtrar por sucursal (opcional):</label>
+    <select id="filtroSucursal">
+      <option value="">Todas</option>
+      <option value="A">Sucursal A</option>
+      <option value="B">Sucursal B</option>
+      <option value="C">Sucursal C</option>
+      <option value="D">Sucursal D</option>
+      <option value="E">Sucursal E</option>
+      <option value="F">Sucursal F</option>
+    </select><br>
+
+    <button type="submit">Buscar</button>
+  </form>
+  <table id="tablaChecadas"></table>
+</div>
 
     <div id="seccionAviso" class="seccion">
       <h4>📣 Crear Aviso</h4>
