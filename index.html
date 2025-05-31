@@ -15,7 +15,7 @@
         const form = document.getElementById('loginForm');
         const mensaje = document.getElementById('mensaje');
 
-        // ✅ PRUEBA DE CONEXIÓN
+        // 🔍 PRUEBA DE CONEXIÓN GENERAL
         supabase
           .from('usuarios')
           .select('*')
@@ -23,17 +23,21 @@
             console.log('🟢 Resultado de prueba:', data, error);
           });
 
-        // ✅ FUNCIONALIDAD DE LOGIN
+        // ✅ LOGIN FUNCIONAL
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
+
           const nombre = document.getElementById('nombre').value.trim();
           const nip = document.getElementById('nip').value.trim();
+
+          // Imprimir lo que se está buscando
+          console.log("Buscando con nombre:", nombre, "NIP:", nip);
 
           const { data, error } = await supabase
             .from('usuarios')
             .select('*')
-            .eq('nombre', nombre)
-            .eq('nip', nip.toString())
+            .ilike('nombre', nombre)
+            .ilike('nip', nip)
             .eq('activo', true)
             .single();
 
