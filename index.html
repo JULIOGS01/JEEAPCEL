@@ -12,13 +12,11 @@
       text-align: center;
     }
 
-    h2 {
-      font-size: 2em;
-      margin-bottom: 20px;
+    h2, h3, h4 {
       color: #222;
     }
 
-    form, .panel {
+    form, .panel, .seccion {
       background: white;
       display: inline-block;
       padding: 20px;
@@ -26,6 +24,7 @@
       border-radius: 12px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.1);
       text-align: left;
+      max-width: 500px;
     }
 
     input, select {
@@ -72,6 +71,10 @@
       margin-top: 20px;
       font-size: 1.1em;
     }
+
+    .seccion {
+      display: none;
+    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
@@ -85,6 +88,12 @@
       const loginForm = document.getElementById('loginForm');
       const adminPanel = document.getElementById('adminPanel');
       const mensaje = document.getElementById('mensaje');
+
+      const secciones = {
+        crear: document.getElementById('seccionCrear'),
+        verUsuarios: document.getElementById('seccionUsuarios'),
+        checadas: document.getElementById('seccionChecadas')
+      };
 
       adminPanel.style.display = 'none';
 
@@ -109,7 +118,6 @@
 
           if (data.rol === 'admin') {
             adminPanel.style.display = 'block';
-            cargarUsuarios();
           } else {
             mensaje.textContent += ' (🔒 Sin acceso al panel de administrador)';
           }
@@ -172,6 +180,15 @@
           tabla.appendChild(fila);
         });
       });
+
+      // Mostrar/Ocultar secciones del panel admin
+      window.mostrarSeccion = (id) => {
+        for (const key in secciones) {
+          secciones[key].style.display = 'none';
+        }
+        secciones[id].style.display = 'block';
+        if (id === 'verUsuarios') cargarUsuarios();
+      };
     });
   </script>
 </head>
@@ -184,28 +201,39 @@
   </form>
 
   <div class="panel" id="adminPanel">
-    <h3>➕ Crear Usuario</h3>
-    <form id="formCrear">
-      <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
-      <input type="password" id="nuevoNip" placeholder="NIP" required><br>
-      <select id="nuevoRol" required>
-        <option value="">Selecciona un rol</option>
-        <option value="admin">admin</option>
-        <option value="supervisor">supervisor</option>
-        <option value="empleado">empleado</option>
-      </select><br>
-      <button type="submit">Crear</button>
-    </form>
+    <h3>🛠️ Panel de administrador</h3>
+    <button onclick="mostrarSeccion('crear')">➕ Crear Usuario</button>
+    <button onclick="mostrarSeccion('verUsuarios')">👁️ Ver Usuarios Activos</button>
+    <button onclick="mostrarSeccion('checadas')">📅 Ver Checadas por Fecha</button>
 
-    <h3>👁️ Usuarios activos</h3>
-    <table id="tablaUsuarios"></table>
+    <div id="seccionCrear" class="seccion">
+      <h4>➕ Crear Usuario</h4>
+      <form id="formCrear">
+        <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
+        <input type="password" id="nuevoNip" placeholder="NIP" required><br>
+        <select id="nuevoRol" required>
+          <option value="">Selecciona un rol</option>
+          <option value="admin">admin</option>
+          <option value="supervisor">supervisor</option>
+          <option value="empleado">empleado</option>
+        </select><br>
+        <button type="submit">Crear</button>
+      </form>
+    </div>
 
-    <h3>📅 Ver checadas por fecha</h3>
-    <form id="formFecha">
-      <input type="date" id="fechaBuscada" required>
-      <button type="submit">Buscar</button>
-    </form>
-    <table id="tablaChecadas"></table>
+    <div id="seccionUsuarios" class="seccion">
+      <h4>👁️ Usuarios activos</h4>
+      <table id="tablaUsuarios"></table>
+    </div>
+
+    <div id="seccionChecadas" class="seccion">
+      <h4>📅 Checadas por fecha</h4>
+      <form id="formFecha">
+        <input type="date" id="fechaBuscada" required>
+        <button type="submit">Buscar</button>
+      </form>
+      <table id="tablaChecadas"></table>
+    </div>
   </div>
 
   <div id="mensaje"></div>
