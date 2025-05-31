@@ -27,7 +27,7 @@
       max-width: 500px;
     }
 
-    input, select {
+    input, select, textarea {
       padding: 8px;
       margin-top: 5px;
       width: 100%;
@@ -86,16 +86,22 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       const loginForm = document.getElementById('loginForm');
+      const loginTitle = document.getElementById('loginTitle');
       const adminPanel = document.getElementById('adminPanel');
       const mensaje = document.getElementById('mensaje');
+      const cerrarSesion = document.getElementById('cerrarSesion');
+      const bienvenida = document.getElementById('bienvenida');
 
       const secciones = {
         crear: document.getElementById('seccionCrear'),
         verUsuarios: document.getElementById('seccionUsuarios'),
-        checadas: document.getElementById('seccionChecadas')
+        checadas: document.getElementById('seccionChecadas'),
+        aviso: document.getElementById('seccionAviso'),
+        reporte: document.getElementById('seccionReporte')
       };
 
       adminPanel.style.display = 'none';
+      cerrarSesion.style.display = 'none';
 
       loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -115,13 +121,18 @@
         } else {
           mensaje.textContent = `✅ Bienvenido, ${data.nombre} | Rol: ${data.rol}`;
           loginForm.style.display = 'none';
+          loginTitle.textContent = '';
+          cerrarSesion.style.display = 'inline-block';
+          bienvenida.textContent = `Bienvenido, ${data.nombre}`;
 
           if (data.rol === 'admin') {
             adminPanel.style.display = 'block';
-          } else {
-            mensaje.textContent += ' (🔒 Sin acceso al panel de administrador)';
           }
         }
+      });
+
+      cerrarSesion.addEventListener('click', () => {
+        location.reload();
       });
 
       document.getElementById('formCrear').addEventListener('submit', async (e) => {
@@ -181,7 +192,23 @@
         });
       });
 
-      // Mostrar/Ocultar secciones del panel admin
+      document.getElementById('formAviso').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const texto = document.getElementById('avisoTexto').value;
+        const rol = document.getElementById('rolDestino').value;
+        const sucursal = document.getElementById('sucursales').value;
+        console.log('Aviso creado para', rol, 'en', sucursal, ':', texto);
+        mensaje.textContent = `📣 Aviso enviado a ${rol} en ${sucursal}`;
+        e.target.reset();
+      });
+
+      document.getElementById('formReporte').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const link = document.getElementById('nuevoLink').value;
+        localStorage.setItem('linkReporte', link);
+        mensaje.textContent = '🔗 Link actualizado correctamente';
+      });
+
       window.mostrarSeccion = (id) => {
         for (const key in secciones) {
           secciones[key].style.display = 'none';
@@ -193,7 +220,8 @@
   </script>
 </head>
 <body>
-  <h2>🔐 Iniciar sesión en Jeeapcel</h2>
+  <h2 id="loginTitle">🔐 Iniciar sesión en Jeeapcel</h2>
+  <h3 id="bienvenida"></h3>
   <form id="loginForm">
     <input type="text" id="nombre" placeholder="Nombre" required><br>
     <input type="password" id="nip" placeholder="NIP" required><br>
@@ -205,6 +233,9 @@
     <button onclick="mostrarSeccion('crear')">➕ Crear Usuario</button>
     <button onclick="mostrarSeccion('verUsuarios')">👁️ Ver Usuarios Activos</button>
     <button onclick="mostrarSeccion('checadas')">📅 Ver Checadas por Fecha</button>
+    <button onclick="mostrarSeccion('aviso')">📣 Crear Aviso</button>
+    <button onclick="mostrarSeccion('reporte')">🔗 Actualizar Link Reportes</button>
+    <button id="cerrarSesion">🔓 Cerrar sesión</button>
 
     <div id="seccionCrear" class="seccion">
       <h4>➕ Crear Usuario</h4>
@@ -233,6 +264,37 @@
         <button type="submit">Buscar</button>
       </form>
       <table id="tablaChecadas"></table>
+    </div>
+
+    <div id="seccionAviso" class="seccion">
+      <h4>📣 Crear Aviso</h4>
+      <form id="formAviso">
+        <textarea id="avisoTexto" placeholder="Escribe el aviso..." required></textarea><br>
+        <select id="rolDestino">
+          <option value="todos">Todos los roles</option>
+          <option value="admin">Solo admins</option>
+          <option value="supervisor">Supervisores</option>
+          <option value="empleado">Empleados</option>
+        </select>
+        <select id="sucursales">
+          <option value="todas">Todas las sucursales</option>
+          <option value="A">Sucursal A</option>
+          <option value="B">Sucursal B</option>
+          <option value="C">Sucursal C</option>
+          <option value="D">Sucursal D</option>
+          <option value="E">Sucursal E</option>
+          <option value="F">Sucursal F</option>
+        </select>
+        <button type="submit">Enviar aviso</button>
+      </form>
+    </div>
+
+    <div id="seccionReporte" class="seccion">
+      <h4>🔗 Actualizar link de reportes</h4>
+      <form id="formReporte">
+        <input type="url" id="nuevoLink" placeholder="Pega aquí el nuevo link del reporte" required>
+        <button type="submit">Actualizar</button>
+      </form>
     </div>
   </div>
 
