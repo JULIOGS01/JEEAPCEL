@@ -81,10 +81,40 @@
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
     );
 
-    window.addEventListener('DOMContentLoaded', async () => {
+    window.addEventListener('DOMContentLoaded', () => {
+      const loginForm = document.getElementById('loginForm');
+      const adminPanel = document.getElementById('adminPanel');
       const mensaje = document.getElementById('mensaje');
 
-      // 1. Crear usuario
+      adminPanel.style.display = 'none';
+
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById('nombre').value.trim();
+        const nip = document.getElementById('nip').value.trim();
+
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('nombre', nombre)
+          .eq('nip', nip)
+          .eq('activo', true)
+          .single();
+
+        if (error || !data) {
+          mensaje.textContent = '❌ Usuario o NIP incorrecto';
+        } else {
+          mensaje.textContent = `✅ Bienvenido, ${data.nombre}`;
+          if (data.rol === 'admin') {
+            loginForm.style.display = 'none';
+            adminPanel.style.display = 'block';
+            cargarUsuarios();
+          } else {
+            mensaje.textContent = '⚠️ Solo los administradores pueden entrar aquí';
+          }
+        }
+      });
+
       document.getElementById('formCrear').addEventListener('submit', async (e) => {
         e.preventDefault();
         const nombre = document.getElementById('nuevoNombre').value.trim();
@@ -102,12 +132,10 @@
         }
       });
 
-      // 2. Mostrar usuarios y permitir desactivar
       async function cargarUsuarios() {
-        const { data, error } = await supabase.from('usuarios').select('*').eq('activo', true);
+        const { data } = await supabase.from('usuarios').select('*').eq('activo', true);
         const tabla = document.getElementById('tablaUsuarios');
         tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Última entrada</th><th>Desactivar</th></tr>';
-
         data.forEach(user => {
           const fila = document.createElement('tr');
           fila.innerHTML = `
@@ -126,11 +154,10 @@
         cargarUsuarios();
       };
 
-      // 3. Buscar por fecha
       document.getElementById('formFecha').addEventListener('submit', async (e) => {
         e.preventDefault();
         const fecha = document.getElementById('fechaBuscada').value;
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('usuarios')
           .select('*')
           .gte('ultima_entrada', fecha + 'T00:00:00')
@@ -144,16 +171,18 @@
           tabla.appendChild(fila);
         });
       });
-
-      // Al cargar
-      cargarUsuarios();
     });
   </script>
 </head>
 <body>
   <h2>👑 Panel de Administración Jeeapcel</h2>
+  <form id="loginForm">
+    <input type="text" id="nombre" placeholder="Nombre" required><br>
+    <input type="password" id="nip" placeholder="NIP" required><br>
+    <button type="submit">Entrar</button>
+  </form>
 
-  <div class="panel">
+  <div class="panel" id="adminPanel">
     <h3>➕ Crear Usuario</h3>
     <form id="formCrear">
       <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
@@ -166,14 +195,10 @@
       </select><br>
       <button type="submit">Crear</button>
     </form>
-  </div>
 
-  <div class="panel">
     <h3>👁️ Usuarios activos</h3>
     <table id="tablaUsuarios"></table>
-  </div>
 
-  <div class="panel">
     <h3>📅 Ver checadas por fecha</h3>
     <form id="formFecha">
       <input type="date" id="fechaBuscada" required>
