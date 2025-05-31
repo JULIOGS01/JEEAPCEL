@@ -1,3 +1,4 @@
+<!-- // INICIO PARTE 1 -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -75,29 +76,15 @@
     .seccion {
       display: none;
     }
+
+    .check-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+    }
   </style>
-
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
-
-    const supabase = createClient(
-      'https://mubtfuksnxtbjxrrwzqh.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
-    );
-
-    window.addEventListener('DOMContentLoaded', () => {
-            const loginForm = document.getElementById('loginForm');
-      const loginTitle = document.getElementById('loginTitle');
-      const adminPanel = document.getElementById('adminPanel');
-      const empleadoPanel = document.getElementById('empleadoPanel');
-      const mensaje = document.getElementById('mensaje');
-      const cerrarSesion = document.getElementById('cerrarSesion');
-      const cerrarSesionEmpleado = document.getElementById('cerrarSesionEmpleado');
-      const bienvenida = document.getElementById('bienvenida');
-      const accionesEmpleado = document.getElementById('accionesEmpleado');
-      const seleccionarSucursal = document.getElementById('seleccionSucursal');
-
-      const secciones = {
+<!-- // FIN PARTE 1 -->
+        const secciones = {
         crear: document.getElementById('seccionCrear'),
         verUsuarios: document.getElementById('seccionUsuarios'),
         checadas: document.getElementById('seccionChecadas'),
@@ -106,9 +93,7 @@
       };
 
       adminPanel.style.display = 'none';
-      empleadoPanel.style.display = 'none';
       cerrarSesion.style.display = 'none';
-      cerrarSesionEmpleado.style.display = 'none';
 
       loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -129,93 +114,262 @@
           mensaje.textContent = `✅ Bienvenido, ${data.nombre} | Rol: ${data.rol}`;
           loginForm.style.display = 'none';
           loginTitle.textContent = '';
+          cerrarSesion.style.display = 'inline-block';
           bienvenida.textContent = `Bienvenido, ${data.nombre}`;
-          
+
+          localStorage.setItem('nombreUsuario', data.nombre);
+          localStorage.setItem('rolUsuario', data.rol);
+
           if (data.rol === 'admin') {
             adminPanel.style.display = 'block';
-            cerrarSesion.style.display = 'inline-block';
-          } else if (data.rol === 'empleado') {
-            empleadoPanel.style.display = 'block';
-            seleccionarSucursal.style.display = 'block';
-            cerrarSesionEmpleado.style.display = 'inline-block';
-
-            document.getElementById('confirmarSucursal').addEventListener('click', async () => {
-              const sucursal = document.getElementById('sucursalEmpleado').value;
-              if (!sucursal) {
-                mensaje.textContent = '⚠️ Selecciona una sucursal';
-                return;
-              }
-              await supabase.from('usuarios').update({ sucursal: sucursal }).eq('id', data.id);
-              seleccionarSucursal.style.display = 'none';
-              accionesEmpleado.style.display = 'block';
-              mensaje.textContent = `🏪 Sucursal seleccionada: ${sucursal}`;
-            });
+          } else {
+            // Empleado o supervisor
+            document.getElementById('empleadoPanel').style.display = 'block';
+            seleccionarSucursal();
           }
         }
       });
 
-      cerrarSesion.addEventListener('click', () => location.reload());
-      cerrarSesionEmpleado.addEventListener('click', () => location.reload());
-            // Llenar select de empleados activos para filtro en admin
-      async function cargarEmpleados() {
-        const { data } = await supabase.from('usuarios').select('nombre').eq('activo', true);
-        const select = document.getElementById('filtroNombre');
-        select.innerHTML = '<option value="">Todos</option>';
-        data.forEach(user => {
-          const option = document.createElement('option');
-          option.value = user.nombre;
-          option.textContent = user.nombre;
-          select.appendChild(option);
-        });
+      cerrarSesion.addEventListener('click', () => {
+        localStorage.clear();
+        location.reload();
+      });
+
+      function seleccionarSucursal() {
+        const contenedor = document.getElementById('seleccionarSucursal');
+        contenedor.innerHTML = `
+          <h4>Selecciona tu sucursal</h4>
+          <select id="sucursalEmpleado">
+            <option value="">Selecciona</option>
+            <option value="A">Sucursal A</option>
+            <option value="B">Sucursal B</option>
+            <option value="C">Sucursal C</option>
+            <option value="D">Sucursal D</option>
+            <option value="E">Sucursal E</option>
+            <option value="F">Sucursal F</option>
+          </select>
+          <button onclick="confirmarSucursal()">Confirmar</button>
+        `;
       }
-      cargarEmpleados();
 
-      // Buscar checadas por fecha, nombre o sucursal
-      document.getElementById('formFecha').addEventListener('submit', async (e) => {
+      window.confirmarSucursal = () => {
+        const sucursal = document.getElementById('sucursalEmpleado').value;
+        if (!sucursal) {
+          alert('Selecciona una sucursal');
+          return;
+        }
+        localStorage.setItem('sucursalEmpleado', sucursal);
+        document.getElementById('seleccionarSucursal').style.display = 'none';
+        document.getElementById('checadorEmpleado').style.display = 'block';
+        document.getElementById('sucursalActual').textContent = sucursal;
+      };
+        document.getElementById('checkIn').addEventListener('click', async () => {
+        const nombre = localStorage.getItem('nombreUsuario');
+        const sucursal = localStorage.getItem('sucursalEmpleado');
+        const { error } = await supabase
+          .from('checadas')
+          .insert([{ nombre, tipo: 'entrada', sucursal, fecha: new Date().toISOString() }]);
+
+        if (error) {
+          mensaje.textContent = '❌ Error al registrar entrada';
+        } else {
+          mensaje.textContent = `✅ Entrada registrada para ${nombre}`;
+        }
+      });
+
+      document.getElementById('checkOut').addEventListener('click', async () => {
+        const nombre = localStorage.getItem('nombreUsuario');
+        const sucursal = localStorage.getItem('sucursalEmpleado');
+        const { error } = await supabase
+          .from('checadas')
+          .insert([{ nombre, tipo: 'salida', sucursal, fecha: new Date().toISOString() }]);
+
+        if (error) {
+          mensaje.textContent = '❌ Error al registrar salida';
+        } else {
+          mensaje.textContent = `✅ Salida registrada para ${nombre}`;
+        }
+      });
+
+      document.getElementById('formCrear').addEventListener('submit', async (e) => {
         e.preventDefault();
-        const fecha = document.getElementById('fechaBuscada').value;
-        const nombre = document.getElementById('filtroNombre').value;
-        const sucursal = document.getElementById('filtroSucursal').value;
+        const nombre = document.getElementById('nuevoNombre').value.trim();
+        const nip = document.getElementById('nuevoNip').value.trim();
+        const rol = document.getElementById('nuevoRol').value;
 
-        let query = supabase.from('usuarios').select('*')
-          .gte('ultima_entrada', fecha + 'T00:00:00')
-          .lte('ultima_entrada', fecha + 'T23:59:59');
+        const { error } = await supabase.from('usuarios').insert([{ nombre, nip, rol, activo: true }]);
 
-        if (nombre) query = query.eq('nombre', nombre);
-        if (sucursal) query = query.eq('sucursal', sucursal);
+        if (error) {
+          mensaje.textContent = '❌ Error al crear usuario';
+        } else {
+          mensaje.textContent = `✅ Usuario ${nombre} creado correctamente`;
+          document.getElementById('formCrear').reset();
+          cargarUsuarios();
+        }
+      });
 
-        const { data } = await query;
-        const tabla = document.getElementById('tablaChecadas');
-        tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Sucursal</th><th>Hora de entrada</th></tr>';
+      async function cargarUsuarios() {
+        const { data } = await supabase.from('usuarios').select('*').eq('activo', true);
+        const tabla = document.getElementById('tablaUsuarios');
+        tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Última entrada</th><th>Desactivar</th></tr>';
         data.forEach(user => {
           const fila = document.createElement('tr');
-          fila.innerHTML = `<td>${user.nombre}</td><td>${user.rol}</td><td>${user.sucursal || '-'}</td><td>${new Date(user.ultima_entrada).toLocaleTimeString()}</td>`;
+          fila.innerHTML = `
+            <td>${user.nombre}</td>
+            <td>${user.rol}</td>
+            <td>${user.ultima_entrada ? new Date(user.ultima_entrada).toLocaleString() : '-'}</td>
+            <td><button onclick="desactivarUsuario(${user.id})">❌</button></td>
+          `;
           tabla.appendChild(fila);
         });
+      }
+
+      window.desactivarUsuario = async (id) => {
+        await supabase.from('usuarios').update({ activo: false }).eq('id', id);
+        mensaje.textContent = '⚠️ Usuario desactivado';
+        cargarUsuarios();
+      };
+        async function cargarChecadas() {
+        const fecha = document.getElementById('fechaBuscada').value;
+        const empleadoFiltro = document.getElementById('filtroEmpleado').value;
+        const sucursalFiltro = document.getElementById('filtroSucursal').value;
+
+        let query = supabase.from('checadas').select('*');
+
+        if (fecha) {
+          query = query
+            .gte('fecha', fecha + 'T00:00:00')
+            .lte('fecha', fecha + 'T23:59:59');
+        }
+
+        if (empleadoFiltro !== 'todos') {
+          query = query.eq('nombre', empleadoFiltro);
+        }
+
+        if (sucursalFiltro !== 'todas') {
+          query = query.eq('sucursal', sucursalFiltro);
+        }
+
+        const { data } = await query;
+
+        const tabla = document.getElementById('tablaChecadas');
+        tabla.innerHTML = '<tr><th>Nombre</th><th>Tipo</th><th>Sucursal</th><th>Hora</th></tr>';
+        data.forEach(checada => {
+          const fila = document.createElement('tr');
+          fila.innerHTML = `
+            <td>${checada.nombre}</td>
+            <td>${checada.tipo}</td>
+            <td>${checada.sucursal}</td>
+            <td>${new Date(checada.fecha).toLocaleTimeString()}</td>
+          `;
+          tabla.appendChild(fila);
+        });
+      }
+
+      document.getElementById('formFecha').addEventListener('submit', (e) => {
+        e.preventDefault();
+        cargarChecadas();
       });
 
-      // Check In
-      document.getElementById('btnCheckIn').addEventListener('click', async () => {
-        const nombre = bienvenida.textContent.replace('Bienvenido, ', '');
-        await supabase.from('usuarios').update({ ultima_entrada: new Date().toISOString() }).eq('nombre', nombre);
-        mensaje.textContent = '✅ Check In registrado';
+      async function llenarFiltroEmpleados() {
+        const { data } = await supabase.from('usuarios').select('nombre').eq('activo', true);
+        const filtro = document.getElementById('filtroEmpleado');
+        filtro.innerHTML = '<option value="todos">Todos</option>';
+        data.forEach(user => {
+          const opt = document.createElement('option');
+          opt.value = user.nombre;
+          opt.textContent = user.nombre;
+          filtro.appendChild(opt);
+        });
+      }
+
+      llenarFiltroEmpleados();
+        // Checador para empleados
+      const seccionEmpleado = document.getElementById('seccionEmpleado');
+      const empleadoNombre = document.getElementById('empleadoNombre');
+      const selectorSucursal = document.getElementById('selectorSucursal');
+      const btnCheckIn = document.getElementById('btnCheckIn');
+      const btnCheckOut = document.getElementById('btnCheckOut');
+      const btnVerReportes = document.getElementById('btnVerReportes');
+
+      async function registrarChecada(tipo, nombre, sucursal) {
+        const { error } = await supabase.from('checadas').insert([
+          { nombre, tipo, sucursal, fecha: new Date().toISOString() }
+        ]);
+
+        if (error) {
+          mensaje.textContent = '❌ Error al registrar checada';
+        } else {
+          mensaje.textContent = `🕒 ${tipo === 'entrada' ? 'Check In' : 'Check Out'} registrado`;
+        }
+      }
+
+      btnCheckIn.addEventListener('click', () => {
+        const sucursal = selectorSucursal.value;
+        const nombre = empleadoNombre.textContent;
+        registrarChecada('entrada', nombre, sucursal);
       });
 
-      // Check Out
-      document.getElementById('btnCheckOut').addEventListener('click', async () => {
-        const nombre = bienvenida.textContent.replace('Bienvenido, ', '');
-        await supabase.from('usuarios').update({ ultima_salida: new Date().toISOString() }).eq('nombre', nombre);
-        mensaje.textContent = '✅ Check Out registrado';
+      btnCheckOut.addEventListener('click', () => {
+        const sucursal = selectorSucursal.value;
+        const nombre = empleadoNombre.textContent;
+        registrarChecada('salida', nombre, sucursal);
       });
-          <div id="seccionChecadas" class="seccion">
+
+      btnVerReportes.addEventListener('click', () => {
+        const link = localStorage.getItem('linkReporte');
+        if (link) window.open(link, '_blank');
+        else mensaje.textContent = '⚠️ No hay link asignado';
+      });
+    });
+  </script>
+  </head>
+<body>
+  <h2 id="loginTitle">🔐 Iniciar sesión en Jeeapcel</h2>
+  <h3 id="bienvenida"></h3>
+  <form id="loginForm">
+    <input type="text" id="nombre" placeholder="Nombre" required><br>
+    <input type="password" id="nip" placeholder="NIP" required><br>
+    <button type="submit">Entrar</button>
+  </form>
+
+  <div class="panel" id="adminPanel">
+    <h3>🛠️ Panel de administrador</h3>
+    <button onclick="mostrarSeccion('crear')">➕ Crear Usuario</button>
+    <button onclick="mostrarSeccion('verUsuarios')">👁️ Ver Usuarios Activos</button>
+    <button onclick="mostrarSeccion('checadas')">📅 Ver Checadas por Fecha</button>
+    <button onclick="mostrarSeccion('aviso')">📣 Crear Aviso</button>
+    <button onclick="mostrarSeccion('reporte')">🔗 Actualizar Link Reportes</button>
+    <button id="cerrarSesion">🔓 Cerrar sesión</button>
+        <div id="seccionCrear" class="seccion">
+      <h4>➕ Crear Usuario</h4>
+      <form id="formCrear">
+        <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
+        <input type="password" id="nuevoNip" placeholder="NIP" required><br>
+        <select id="nuevoRol" required>
+          <option value="">Selecciona un rol</option>
+          <option value="admin">admin</option>
+          <option value="supervisor">supervisor</option>
+          <option value="empleado">empleado</option>
+        </select><br>
+        <button type="submit">Crear</button>
+      </form>
+    </div>
+
+    <div id="seccionUsuarios" class="seccion">
+      <h4>👁️ Usuarios activos</h4>
+      <table id="tablaUsuarios"></table>
+    </div>
+
+    <div id="seccionChecadas" class="seccion">
       <h4>📅 Checadas por fecha</h4>
       <form id="formFecha">
         <input type="date" id="fechaBuscada" required>
-        <select id="filtroNombre">
-          <option value="">Todos los empleados</option>
+        <select id="filtroEmpleado">
+          <option value="">-- Filtrar por empleado --</option>
         </select>
         <select id="filtroSucursal">
-          <option value="">Todas las sucursales</option>
+          <option value="">-- Filtrar por sucursal --</option>
           <option value="A">Sucursal A</option>
           <option value="B">Sucursal B</option>
           <option value="C">Sucursal C</option>
@@ -227,300 +381,17 @@
       </form>
       <table id="tablaChecadas"></table>
     </div>
-
-    <!-- Panel empleado -->
-    <div class="panel" id="empleadoPanel" style="display: none;">
-      <h3>🙋 Panel de empleado</h3>
-      <h4 id="sucursalTitulo">Selecciona tu sucursal</h4>
-      <select id="sucursalEmpleado">
-        <option value="">Selecciona...</option>
-        <option value="A">Sucursal A</option>
-        <option value="B">Sucursal B</option>
-        <option value="C">Sucursal C</option>
-        <option value="D">Sucursal D</option>
-        <option value="E">Sucursal E</option>
-        <option value="F">Sucursal F</option>
-      </select>
-      <button onclick="guardarSucursal()">Guardar Sucursal</button>
-
-      <div id="accionesEmpleado" style="display:none; margin-top:20px;">
-        <button id="btnCheckIn">✅ Check In</button>
-        <button id="btnCheckOut">⛔ Check Out</button>
-      </div>
-    </div>
-      <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-    const supabase = createClient(
-      'https://mubtfuksnxtbjxrrwzqh.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
-    );
-
-    let usuarioActual = null;
-
-    window.addEventListener('DOMContentLoaded', () => {
-      // ... (todo lo anterior)
-
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const nombre = document.getElementById('nombre').value.trim();
-        const nip = document.getElementById('nip').value.trim();
-
-        const { data, error } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('nombre', nombre)
-          .eq('nip', nip)
-          .eq('activo', true)
-          .single();
-
-        if (error || !data) {
-          mensaje.textContent = '❌ Usuario o NIP incorrecto';
-        } else {
-          usuarioActual = data;
-          mensaje.textContent = `✅ Bienvenido, ${data.nombre} | Rol: ${data.rol}`;
-          loginForm.style.display = 'none';
-          loginTitle.textContent = '';
-          cerrarSesion.style.display = 'inline-block';
-          bienvenida.textContent = `Bienvenido, ${data.nombre}`;
-
-          if (data.rol === 'admin') {
-            adminPanel.style.display = 'block';
-          } else if (data.rol === 'empleado') {
-            document.getElementById('empleadoPanel').style.display = 'block';
-          }
-        }
-      });
-
-      document.getElementById('btnCheckIn').addEventListener('click', async () => {
-        if (!usuarioActual || !usuarioActual.sucursal) {
-          alert('Selecciona tu sucursal primero');
-          return;
-        }
-
-        await supabase.from('checadas').insert([
-          {
-            usuario_id: usuarioActual.id,
-            nombre: usuarioActual.nombre,
-            sucursal: usuarioActual.sucursal,
-            tipo: 'entrada',
-            hora: new Date().toISOString()
-          }
-        ]);
-        mensaje.textContent = '✅ Check In registrado';
-      });
-
-      document.getElementById('btnCheckOut').addEventListener('click', async () => {
-        if (!usuarioActual || !usuarioActual.sucursal) {
-          alert('Selecciona tu sucursal primero');
-          return;
-        }
-
-        await supabase.from('checadas').insert([
-          {
-            usuario_id: usuarioActual.id,
-            nombre: usuarioActual.nombre,
-            sucursal: usuarioActual.sucursal,
-            tipo: 'salida',
-            hora: new Date().toISOString()
-          }
-        ]);
-        mensaje.textContent = '⛔ Check Out registrado';
-      });
-
-      window.guardarSucursal = async () => {
-        const sucursal = document.getElementById('sucursalEmpleado').value;
-        if (!sucursal) return alert('Selecciona una sucursal');
-
-        await supabase
-          .from('usuarios')
-          .update({ sucursal })
-          .eq('id', usuarioActual.id);
-
-        usuarioActual.sucursal = sucursal;
-        document.getElementById('sucursalTitulo').textContent = `Sucursal: ${sucursal}`;
-        document.getElementById('sucursalEmpleado').style.display = 'none';
-        document.querySelector('#empleadoPanel button[onclick="guardarSucursal()"]').style.display = 'none';
-        document.getElementById('accionesEmpleado').style.display = 'block';
-      };
-            document.getElementById('formFecha').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fecha = document.getElementById('fechaBuscada').value;
-        const filtroNombre = document.getElementById('filtroNombre').value;
-        const filtroSucursal = document.getElementById('filtroSucursal').value;
-
-        let query = supabase.from('checadas').select('*');
-        if (fecha) {
-          query = query
-            .gte('hora', fecha + 'T00:00:00')
-            .lte('hora', fecha + 'T23:59:59');
-        }
-        if (filtroNombre) {
-          query = query.eq('nombre', filtroNombre);
-        }
-        if (filtroSucursal) {
-          query = query.eq('sucursal', filtroSucursal);
-        }
-
-        const { data } = await query.order('hora', { ascending: true });
-
-        const tabla = document.getElementById('tablaChecadas');
-        tabla.innerHTML = '<tr><th>Nombre</th><th>Sucursal</th><th>Tipo</th><th>Hora</th></tr>';
-        data.forEach(row => {
-          const fila = document.createElement('tr');
-          fila.innerHTML = `
-            <td>${row.nombre}</td>
-            <td>${row.sucursal}</td>
-            <td>${row.tipo === 'entrada' ? '✅ Entrada' : '⛔ Salida'}</td>
-            <td>${new Date(row.hora).toLocaleString()}</td>
-          `;
-          tabla.appendChild(fila);
-        });
-      });
-
-      async function cargarNombresChecadas() {
-        const { data } = await supabase.from('usuarios').select('nombre').eq('activo', true);
-        const filtro = document.getElementById('filtroNombre');
-        filtro.innerHTML = '<option value="">Todos</option>';
-        data.forEach(u => {
-          const option = document.createElement('option');
-          option.value = u.nombre;
-          option.textContent = u.nombre;
-          filtro.appendChild(option);
-        });
-      }
-
-      cargarNombresChecadas();
-        <div class="panel" id="empleadoPanel" style="display: none;">
-    <h3>🕒 Panel del Empleado</h3>
-    <p id="bienvenidaEmpleado"></p>
-    <label for="selectorSucursal">Selecciona tu sucursal:</label>
-    <select id="selectorSucursal" required>
-      <option value="">Selecciona...</option>
-      <option value="A">Sucursal A</option>
-      <option value="B">Sucursal B</option>
-      <option value="C">Sucursal C</option>
-      <option value="D">Sucursal D</option>
-      <option value="E">Sucursal E</option>
-      <option value="F">Sucursal F</option>
-    </select><br><br>
-
-    <button id="btnCheckIn">✅ Check In</button>
-    <button id="btnCheckOut">⛔ Check Out</button>
-    <button id="cerrarSesionEmpleado">🔓 Cerrar sesión</button>
-
-    <div id="mensajeEmpleado"></div>
-  </div>
-    <script type="module">
-// ... (código anterior dentro de DOMContentLoaded)
-
-// Referencias a elementos del panel de empleado
-const empleadoPanel = document.getElementById('empleadoPanel');
-const bienvenidaEmpleado = document.getElementById('bienvenidaEmpleado');
-const selectorSucursal = document.getElementById('selectorSucursal');
-const mensajeEmpleado = document.getElementById('mensajeEmpleado');
-const btnCheckIn = document.getElementById('btnCheckIn');
-const btnCheckOut = document.getElementById('btnCheckOut');
-const cerrarSesionEmpleado = document.getElementById('cerrarSesionEmpleado');
-
-let usuarioActual = null;
-
-// Después del login exitoso:
-if (data.rol === 'empleado') {
-  usuarioActual = data;
-  loginForm.style.display = 'none';
-  loginTitle.textContent = '';
-  cerrarSesionEmpleado.style.display = 'inline-block';
-  empleadoPanel.style.display = 'block';
-  bienvenidaEmpleado.textContent = `Hola ${data.nombre}, selecciona tu sucursal y registra tu entrada o salida.`;
-}
-
-// Funciones Check In / Check Out
-btnCheckIn.addEventListener('click', async () => {
-  const sucursal = selectorSucursal.value;
-  if (!sucursal) {
-    mensajeEmpleado.textContent = '⚠️ Selecciona una sucursal antes de registrar.';
-    return;
-  }
-
-  const { error } = await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    rol: usuarioActual.rol,
-    sucursal,
-    tipo: 'entrada',
-    hora: new Date().toISOString()
-  }]);
-
-  mensajeEmpleado.textContent = error ? '❌ Error al registrar entrada' : '✅ Entrada registrada';
-});
-
-btnCheckOut.addEventListener('click', async () => {
-  const sucursal = selectorSucursal.value;
-  if (!sucursal) {
-    mensajeEmpleado.textContent = '⚠️ Selecciona una sucursal antes de registrar.';
-    return;
-  }
-
-  const { error } = await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    rol: usuarioActual.rol,
-    sucursal,
-    tipo: 'salida',
-    hora: new Date().toISOString()
-  }]);
-
-  mensajeEmpleado.textContent = error ? '❌ Error al registrar salida' : '✅ Salida registrada';
-});
-
-// Cerrar sesión del empleado
-cerrarSesionEmpleado.addEventListener('click', () => location.reload());
-    // Dentro de DOMContentLoaded, reemplaza el listener del formFecha con este nuevo código:
-document.getElementById('formFecha').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const fecha = document.getElementById('fechaBuscada').value;
-  const filtroEmpleado = document.getElementById('filtroEmpleado').value;
-  const filtroSucursal = document.getElementById('filtroSucursal').value;
-
-  let query = supabase.from('checadas').select('*')
-    .gte('hora', fecha + 'T00:00:00')
-    .lte('hora', fecha + 'T23:59:59');
-
-  if (filtroEmpleado && filtroEmpleado !== 'todos') {
-    query = query.eq('nombre', filtroEmpleado);
-  }
-
-  if (filtroSucursal && filtroSucursal !== 'todas') {
-    query = query.eq('sucursal', filtroSucursal);
-  }
-
-  const { data, error } = await query;
-
-  const tabla = document.getElementById('tablaChecadas');
-  tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Sucursal</th><th>Tipo</th><th>Hora</th></tr>';
-
-  if (error) {
-    tabla.innerHTML += `<tr><td colspan="5">❌ Error al cargar datos</td></tr>`;
-    return;
-  }
-
-  data.forEach(row => {
-    const fila = document.createElement('tr');
-    fila.innerHTML = `
-      <td>${row.nombre}</td>
-      <td>${row.rol}</td>
-      <td>${row.sucursal}</td>
-      <td>${row.tipo === 'entrada' ? '🟢 Entrada' : '🔴 Salida'}</td>
-      <td>${new Date(row.hora).toLocaleString()}</td>
-    `;
-    tabla.appendChild(fila);
-  });
-});
-        <!-- Sección checadas con filtros -->
-    <div id="seccionChecadas" class="seccion">
-      <h4>📅 Checadas por fecha</h4>
-      <form id="formFecha">
-        <input type="date" id="fechaBuscada" required>
-        <select id="filtroSucursal">
+        <div id="seccionAviso" class="seccion">
+      <h4>📣 Crear Aviso</h4>
+      <form id="formAviso">
+        <textarea id="avisoTexto" placeholder="Escribe el aviso..." required></textarea><br>
+        <select id="rolDestino">
+          <option value="todos">Todos los roles</option>
+          <option value="admin">Solo admins</option>
+          <option value="supervisor">Supervisores</option>
+          <option value="empleado">Empleados</option>
+        </select>
+        <select id="sucursales">
           <option value="todas">Todas las sucursales</option>
           <option value="A">Sucursal A</option>
           <option value="B">Sucursal B</option>
@@ -529,227 +400,29 @@ document.getElementById('formFecha').addEventListener('submit', async (e) => {
           <option value="E">Sucursal E</option>
           <option value="F">Sucursal F</option>
         </select>
-        <select id="filtroEmpleado">
-          <option value="todos">Todos los empleados</option>
-        </select>
-        <button type="submit">Buscar</button>
+        <button type="submit">Enviar aviso</button>
       </form>
-      <table id="tablaChecadas"></table>
     </div>
 
-    <script type="module">
-      import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+    <div id="seccionReporte" class="seccion">
+      <h4>🔗 Actualizar link de reportes</h4>
+      <form id="formReporte">
+        <input type="url" id="nuevoLink" placeholder="Pega aquí el nuevo link del reporte" required>
+        <button type="submit">Actualizar</button>
+      </form>
+    </div>
+  </div>
 
-      const supabase = createClient(
-        'https://mubtfuksnxtbjxrrwzqh.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
-      );
+  <div class="panel" id="empleadoPanel" style="display:none;">
+    <h3 id="tituloEmpleado">👤 Panel de empleado</h3>
+    <div id="avisoEmpleado"></div>
+    <button onclick="checkIn()">✅ Check In</button>
+    <button onclick="checkOut()">❌ Check Out</button>
+    <br><br>
+    <button onclick="abrirReporte()">📎 Ver link de reportes</button>
+    <button id="cerrarSesionEmpleado">🔓 Cerrar sesión</button>
+  </div>
 
-      async function cargarEmpleadosParaFiltro() {
-        const { data, error } = await supabase
-          .from('usuarios')
-          .select('nombre')
-          .eq('activo', true)
-          .eq('rol', 'empleado');
-
-        const filtroEmpleado = document.getElementById('filtroEmpleado');
-        filtroEmpleado.innerHTML = '<option value="todos">Todos los empleados</option>';
-
-        if (!error && data) {
-          data.forEach(emp => {
-            const option = document.createElement('option');
-            option.value = emp.nombre;
-            option.textContent = emp.nombre;
-            filtroEmpleado.appendChild(option);
-          });
-        }
-      }
-
-      window.addEventListener('DOMContentLoaded', () => {
-        cargarEmpleadosParaFiltro();
-      });
-    </script>
-        <script type="module">
-      // Ya está importado el supabase y cargando filtro empleados en Parte 11
-
-      document.getElementById('formFecha').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fecha = document.getElementById('fechaBuscada').value;
-        const sucursal = document.getElementById('filtroSucursal').value;
-        const empleado = document.getElementById('filtroEmpleado').value;
-
-        let query = supabase.from('checadas').select('*')
-          .gte('entrada', fecha + 'T00:00:00')
-          .lte('entrada', fecha + 'T23:59:59');
-
-        if (sucursal !== 'todas') {
-          query = query.eq('sucursal', sucursal);
-        }
-
-        if (empleado !== 'todos') {
-          query = query.eq('nombre', empleado);
-        }
-
-        const { data, error } = await query;
-
-        const tabla = document.getElementById('tablaChecadas');
-        tabla.innerHTML = '<tr><th>Nombre</th><th>Sucursal</th><th>Entrada</th><th>Salida</th></tr>';
-
-        if (data && data.length > 0) {
-          data.forEach(item => {
-            const fila = document.createElement('tr');
-            fila.innerHTML = `
-              <td>${item.nombre}</td>
-              <td>${item.sucursal}</td>
-              <td>${item.entrada ? new Date(item.entrada).toLocaleTimeString() : '-'}</td>
-              <td>${item.salida ? new Date(item.salida).toLocaleTimeString() : '-'}</td>
-            `;
-            tabla.appendChild(fila);
-          });
-        } else {
-          const fila = document.createElement('tr');
-          fila.innerHTML = '<td colspan="4">No se encontraron checadas</td>';
-          tabla.appendChild(fila);
-        }
-      });
-    </script>
-        <script type="module">
-      // Esta parte extiende el script ya iniciado, asegurando que lo pegas después del bloque anterior o al final del script principal
-
-      // Detectar si el usuario es EMPLEADO
-      if (data.rol === 'empleado') {
-        const seccionEmpleado = document.createElement('div');
-        seccionEmpleado.className = 'panel';
-        seccionEmpleado.innerHTML = `
-          <h3>👤 Panel de empleado</h3>
-          <label for="seleccionSucursal">Selecciona tu sucursal:</label>
-          <select id="seleccionSucursal" required>
-            <option value="A">Sucursal A</option>
-            <option value="B">Sucursal B</option>
-            <option value="C">Sucursal C</option>
-            <option value="D">Sucursal D</option>
-            <option value="E">Sucursal E</option>
-            <option value="F">Sucursal F</option>
-          </select><br><br>
-          <button id="btnCheckIn">🕒 Check In</button>
-          <button id="btnCheckOut">✅ Check Out</button>
-        `;
-        document.body.appendChild(seccionEmpleado);
-
-        const checkIn = document.getElementById('btnCheckIn');
-        const checkOut = document.getElementById('btnCheckOut');
-        const sucursalInput = document.getElementById('seleccionSucursal');
-
-        checkIn.addEventListener('click', async () => {
-          const sucursal = sucursalInput.value;
-          const { error } = await supabase.from('checadas').insert([{
-            nombre: data.nombre,
-            sucursal,
-            entrada: new Date().toISOString()
-          }]);
-
-          mensaje.textContent = error ? '❌ Error al hacer check-in' : '🕒 Check-in exitoso';
-        });
-
-        checkOut.addEventListener('click', async () => {
-          const { data: ultima } = await supabase
-            .from('checadas')
-            .select('*')
-            .eq('nombre', data.nombre)
-            .order('entrada', { ascending: false })
-            .limit(1);
-
-          if (ultima && ultima.length > 0) {
-            const id = ultima[0].id;
-            const { error } = await supabase
-              .from('checadas')
-              .update({ salida: new Date().toISOString() })
-              .eq('id', id);
-
-            mensaje.textContent = error ? '❌ Error al hacer check-out' : '✅ Check-out exitoso';
-          } else {
-            mensaje.textContent = '⚠️ No se encontró un check-in previo';
-          }
-        });
-      }LIS
-                // Continuación lógica del script principal, puedes pegar esto al final del bloque <script> donde definimos mostrarSeccion
-
-      // Ajuste para mostrar las nuevas checadas desde la tabla 'checadas' en lugar de 'usuarios'
-      document.getElementById('formFecha').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const fecha = document.getElementById('fechaBuscada').value;
-        const empleadoFiltro = document.getElementById('filtroEmpleado')?.value;
-        const sucursalFiltro = document.getElementById('filtroSucursal')?.value;
-
-        let query = supabase
-          .from('checadas')
-          .select('*')
-          .gte('entrada', fecha + 'T00:00:00')
-          .lte('entrada', fecha + 'T23:59:59');
-
-        if (empleadoFiltro && empleadoFiltro !== 'todos') {
-          query = query.eq('nombre', empleadoFiltro);
-        }
-
-        if (sucursalFiltro && sucursalFiltro !== 'todas') {
-          query = query.eq('sucursal', sucursalFiltro);
-        }
-
-        const { data, error } = await query;
-
-        const tabla = document.getElementById('tablaChecadas');
-        tabla.innerHTML = '<tr><th>Nombre</th><th>Sucursal</th><th>Entrada</th><th>Salida</th></tr>';
-        data.forEach(row => {
-          const fila = document.createElement('tr');
-          fila.innerHTML = `
-            <td>${row.nombre}</td>
-            <td>${row.sucursal}</td>
-            <td>${row.entrada ? new Date(row.entrada).toLocaleTimeString() : '-'}</td>
-            <td>${row.salida ? new Date(row.salida).toLocaleTimeString() : '-'}</td>
-          `;
-          tabla.appendChild(fila);
-        });
-
-        if (error) {
-          mensaje.textContent = '❌ Error al consultar checadas';
-        }
-      });
-
-      // Cargar lista de empleados en el filtro
-      async function cargarFiltroEmpleados() {
-        const { data } = await supabase.from('usuarios').select('nombre').eq('activo', true);
-        const filtro = document.getElementById('filtroEmpleado');
-        filtro.innerHTML = `<option value="todos">Todos</option>`;
-        data.forEach(user => {
-          const opt = document.createElement('option');
-          opt.value = user.nombre;
-          opt.textContent = user.nombre;
-          filtro.appendChild(opt);
-        });
-      }
-          <!-- Inserta esto dentro de la sección #seccionChecadas, justo antes del botón de Buscar -->
-<div style="margin-top: 10px;">
-  <label for="filtroEmpleado"><strong>Filtrar por empleado:</strong></label>
-  <select id="filtroEmpleado" onchange="cargarFiltroEmpleados()">
-    <option value="todos">Todos</option>
-    <!-- Se llenará dinámicamente -->
-  </select>
-</div>
-
-<div style="margin-top: 10px;">
-  <label for="filtroSucursal"><strong>Filtrar por sucursal:</strong></label>
-  <select id="filtroSucursal">
-    <option value="todas">Todas</option>
-    <option value="A">Sucursal A</option>
-    <option value="B">Sucursal B</option>
-    <option value="C">Sucursal C</option>
-    <option value="D">Sucursal D</option>
-    <option value="E">Sucursal E</option>
-    <option value="F">Sucursal F</option>
-  </select>
-</div>
-
-<script>
-  // Cargar empleados al cargar la página para el filtro
-  cargarFiltroEmpleados();
-</script>
+  <div id="mensaje"></div>
+</body>
+</html>
