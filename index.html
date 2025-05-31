@@ -106,7 +106,6 @@ let usuarioActual = null;
 const btnCheckOut = document.getElementById('btnCheckOut');
 const sucursalMostrada = document.getElementById('sucursalMostrada');
 
-let usuarioActual = null; // se asignará tras login
 
 btnCheckIn.addEventListener('click', async () => {
   const ahora = new Date().toISOString();
@@ -288,39 +287,7 @@ sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
         secciones[id].style.display = 'block';
         if (id === 'verUsuarios') cargarUsuarios();
       };
-      const btnCheckIn = document.getElementById('btnCheckIn');
-const btnCheckOut = document.getElementById('btnCheckOut');
-const sucursalMostrada = document.getElementById('sucursalMostrada');
-
-btnCheckIn.addEventListener('click', async () => {
-  const ahora = new Date().toISOString();
-  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
-  if (!usuarioActual) return;
-
-  await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    sucursal,
-    tipo: 'entrada',
-    hora: ahora
-  }]);
-
-  mensaje.textContent = `✅ Entrada registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
-});
-
-btnCheckOut.addEventListener('click', async () => {
-  const ahora = new Date().toISOString();
-  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
-  if (!usuarioActual) return;
-
-  await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    sucursal,
-    tipo: 'salida',
-    hora: ahora
-  }]);
-
-  mensaje.textContent = `🔴 Salida registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
-});
+      
     });
   </script>
 </head>
