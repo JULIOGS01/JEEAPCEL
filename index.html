@@ -1,4 +1,3 @@
-<!-- // INICIO PARTE 1 -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -83,8 +82,24 @@
       gap: 10px;
     }
   </style>
-<!-- // FIN PARTE 1 -->
-        const secciones = {
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm'
+
+    const supabase = createClient(
+      'https://mubtfuksnxtbjxrrwzqh.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
+    );
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const loginForm = document.getElementById('loginForm');
+      const loginTitle = document.getElementById('loginTitle');
+      const adminPanel = document.getElementById('adminPanel');
+      const empleadoPanel = document.getElementById('empleadoPanel');
+      const mensaje = document.getElementById('mensaje');
+      const cerrarSesion = document.getElementById('cerrarSesion');
+      const bienvenida = document.getElementById('bienvenida');
+
+      const secciones = {
         crear: document.getElementById('seccionCrear'),
         verUsuarios: document.getElementById('seccionUsuarios'),
         checadas: document.getElementById('seccionChecadas'),
@@ -93,6 +108,7 @@
       };
 
       adminPanel.style.display = 'none';
+      empleadoPanel.style.display = 'none';
       cerrarSesion.style.display = 'none';
 
       loginForm.addEventListener('submit', async (e) => {
@@ -123,8 +139,7 @@
           if (data.rol === 'admin') {
             adminPanel.style.display = 'block';
           } else {
-            // Empleado o supervisor
-            document.getElementById('empleadoPanel').style.display = 'block';
+            empleadoPanel.style.display = 'block';
             seleccionarSucursal();
           }
         }
@@ -134,8 +149,7 @@
         localStorage.clear();
         location.reload();
       });
-
-      function seleccionarSucursal() {
+            function seleccionarSucursal() {
         const contenedor = document.getElementById('seleccionarSucursal');
         contenedor.innerHTML = `
           <h4>Selecciona tu sucursal</h4>
@@ -163,7 +177,8 @@
         document.getElementById('checadorEmpleado').style.display = 'block';
         document.getElementById('sucursalActual').textContent = sucursal;
       };
-        document.getElementById('checkIn').addEventListener('click', async () => {
+
+      document.getElementById('checkIn').addEventListener('click', async () => {
         const nombre = localStorage.getItem('nombreUsuario');
         const sucursal = localStorage.getItem('sucursalEmpleado');
         const { error } = await supabase
@@ -229,7 +244,7 @@
         mensaje.textContent = '⚠️ Usuario desactivado';
         cargarUsuarios();
       };
-        async function cargarChecadas() {
+            async function cargarChecadas() {
         const fecha = document.getElementById('fechaBuscada').value;
         const empleadoFiltro = document.getElementById('filtroEmpleado').value;
         const sucursalFiltro = document.getElementById('filtroSucursal').value;
@@ -242,23 +257,29 @@
             .lte('fecha', fecha + 'T23:59:59');
         }
 
-        if (empleadoFiltro !== 'todos') {
+        if (empleadoFiltro !== 'todos' && empleadoFiltro !== '') {
           query = query.eq('nombre', empleadoFiltro);
         }
 
-        if (sucursalFiltro !== 'todas') {
+        if (sucursalFiltro !== 'todas' && sucursalFiltro !== '') {
           query = query.eq('sucursal', sucursalFiltro);
         }
 
-        const { data } = await query;
+        const { data, error } = await query;
 
         const tabla = document.getElementById('tablaChecadas');
         tabla.innerHTML = '<tr><th>Nombre</th><th>Tipo</th><th>Sucursal</th><th>Hora</th></tr>';
+
+        if (error || !data) {
+          tabla.innerHTML += `<tr><td colspan="4">❌ Error al cargar datos</td></tr>`;
+          return;
+        }
+
         data.forEach(checada => {
           const fila = document.createElement('tr');
           fila.innerHTML = `
             <td>${checada.nombre}</td>
-            <td>${checada.tipo}</td>
+            <td>${checada.tipo === 'entrada' ? '🟢 Entrada' : '🔴 Salida'}</td>
             <td>${checada.sucursal}</td>
             <td>${new Date(checada.fecha).toLocaleTimeString()}</td>
           `;
@@ -284,49 +305,38 @@
       }
 
       llenarFiltroEmpleados();
-        // Checador para empleados
-      const seccionEmpleado = document.getElementById('seccionEmpleado');
-      const empleadoNombre = document.getElementById('empleadoNombre');
-      const selectorSucursal = document.getElementById('selectorSucursal');
-      const btnCheckIn = document.getElementById('btnCheckIn');
-      const btnCheckOut = document.getElementById('btnCheckOut');
-      const btnVerReportes = document.getElementById('btnVerReportes');
 
-      async function registrarChecada(tipo, nombre, sucursal) {
-        const { error } = await supabase.from('checadas').insert([
-          { nombre, tipo, sucursal, fecha: new Date().toISOString() }
-        ]);
+      document.getElementById('formAviso').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const texto = document.getElementById('avisoTexto').value;
+        const rol = document.getElementById('rolDestino').value;
+        const sucursal = document.getElementById('sucursales').value;
+        console.log('Aviso creado para', rol, 'en', sucursal, ':', texto);
+        mensaje.textContent = `📣 Aviso enviado a ${rol} en ${sucursal}`;
+        e.target.reset();
+      });
 
-        if (error) {
-          mensaje.textContent = '❌ Error al registrar checada';
-        } else {
-          mensaje.textContent = `🕒 ${tipo === 'entrada' ? 'Check In' : 'Check Out'} registrado`;
+      document.getElementById('formReporte').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const link = document.getElementById('nuevoLink').value;
+        localStorage.setItem('linkReporte', link);
+        mensaje.textContent = '🔗 Link actualizado correctamente';
+      });
+
+      window.mostrarSeccion = (id) => {
+        for (const key in secciones) {
+          secciones[key].style.display = 'none';
         }
-      }
-
-      btnCheckIn.addEventListener('click', () => {
-        const sucursal = selectorSucursal.value;
-        const nombre = empleadoNombre.textContent;
-        registrarChecada('entrada', nombre, sucursal);
-      });
-
-      btnCheckOut.addEventListener('click', () => {
-        const sucursal = selectorSucursal.value;
-        const nombre = empleadoNombre.textContent;
-        registrarChecada('salida', nombre, sucursal);
-      });
-
-      btnVerReportes.addEventListener('click', () => {
-        const link = localStorage.getItem('linkReporte');
-        if (link) window.open(link, '_blank');
-        else mensaje.textContent = '⚠️ No hay link asignado';
-      });
+        secciones[id].style.display = 'block';
+        if (id === 'verUsuarios') cargarUsuarios();
+      };
     });
   </script>
   </head>
 <body>
   <h2 id="loginTitle">🔐 Iniciar sesión en Jeeapcel</h2>
   <h3 id="bienvenida"></h3>
+
   <form id="loginForm">
     <input type="text" id="nombre" placeholder="Nombre" required><br>
     <input type="password" id="nip" placeholder="NIP" required><br>
@@ -341,7 +351,8 @@
     <button onclick="mostrarSeccion('aviso')">📣 Crear Aviso</button>
     <button onclick="mostrarSeccion('reporte')">🔗 Actualizar Link Reportes</button>
     <button id="cerrarSesion">🔓 Cerrar sesión</button>
-        <div id="seccionCrear" class="seccion">
+
+    <div id="seccionCrear" class="seccion">
       <h4>➕ Crear Usuario</h4>
       <form id="formCrear">
         <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
