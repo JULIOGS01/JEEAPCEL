@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Checador Jeeapcel</title>
+  <title>Checador Jeeapcel - Panel Admin</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(to bottom, #f0f4f8, #dbe9f4);
+      background: #eef3f8;
       padding: 40px;
       text-align: center;
     }
@@ -18,23 +18,21 @@
       color: #222;
     }
 
-    form {
+    form, .panel {
       background: white;
       display: inline-block;
-      padding: 20px 30px;
+      padding: 20px;
+      margin-top: 20px;
       border-radius: 12px;
       box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-
-    label {
-      font-weight: bold;
+      text-align: left;
     }
 
     input, select {
-      padding: 8px 12px;
+      padding: 8px;
       margin-top: 5px;
       width: 100%;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
       border-radius: 6px;
       border: 1px solid #ccc;
       font-size: 1em;
@@ -44,148 +42,145 @@
       padding: 10px 20px;
       background: #0077cc;
       color: white;
-      font-weight: bold;
       border: none;
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.3s;
-      margin-top: 10px;
+      font-weight: bold;
+      margin: 5px;
     }
 
     button:hover {
       background: #005fa3;
     }
 
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+
+    th, td {
+      padding: 10px;
+      text-align: center;
+    }
+
     #mensaje {
       margin-top: 20px;
       font-size: 1.1em;
     }
-
-    .rol-menu {
-      margin-top: 20px;
-    }
-
-    .rol-menu button {
-      margin: 8px;
-      background: #28a745;
-    }
-
-    .rol-menu button:hover {
-      background: #218838;
-    }
   </style>
-
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    const supabaseUrl = 'https://mubtfuksnxtbjxrrwzqh.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(
+      'https://mubtfuksnxtbjxrrwzqh.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
+    );
 
-    window.addEventListener('DOMContentLoaded', () => {
-      const form = document.getElementById('loginForm');
+    window.addEventListener('DOMContentLoaded', async () => {
       const mensaje = document.getElementById('mensaje');
 
-      form.addEventListener('submit', async (e) => {
+      // 1. Crear usuario
+      document.getElementById('formCrear').addEventListener('submit', async (e) => {
         e.preventDefault();
+        const nombre = document.getElementById('nuevoNombre').value.trim();
+        const nip = document.getElementById('nuevoNip').value.trim();
+        const rol = document.getElementById('nuevoRol').value;
 
-        const nombre = document.getElementById('nombre').value.trim();
-        const nip = document.getElementById('nip').value.trim();
+        const { error } = await supabase.from('usuarios').insert([{ nombre, nip, rol, activo: true }]);
 
+        if (error) {
+          mensaje.textContent = '❌ Error al crear usuario';
+        } else {
+          mensaje.textContent = `✅ Usuario ${nombre} creado correctamente`;
+          document.getElementById('formCrear').reset();
+          cargarUsuarios();
+        }
+      });
+
+      // 2. Mostrar usuarios y permitir desactivar
+      async function cargarUsuarios() {
+        const { data, error } = await supabase.from('usuarios').select('*').eq('activo', true);
+        const tabla = document.getElementById('tablaUsuarios');
+        tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Última entrada</th><th>Desactivar</th></tr>';
+
+        data.forEach(user => {
+          const fila = document.createElement('tr');
+          fila.innerHTML = `
+            <td>${user.nombre}</td>
+            <td>${user.rol}</td>
+            <td>${user.ultima_entrada ? new Date(user.ultima_entrada).toLocaleString() : '-'}</td>
+            <td><button onclick="desactivarUsuario(${user.id})">❌</button></td>
+          `;
+          tabla.appendChild(fila);
+        });
+      }
+
+      window.desactivarUsuario = async (id) => {
+        await supabase.from('usuarios').update({ activo: false }).eq('id', id);
+        mensaje.textContent = '⚠️ Usuario desactivado';
+        cargarUsuarios();
+      };
+
+      // 3. Buscar por fecha
+      document.getElementById('formFecha').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const fecha = document.getElementById('fechaBuscada').value;
         const { data, error } = await supabase
           .from('usuarios')
           .select('*')
-          .ilike('nombre', nombre)
-          .ilike('nip', nip)
-          .eq('activo', true)
-          .single();
+          .gte('ultima_entrada', fecha + 'T00:00:00')
+          .lte('ultima_entrada', fecha + 'T23:59:59');
 
-        if (error || !data) {
-          mensaje.innerHTML = '❌ <span style="color:red;">Nombre o NIP incorrecto.</span>';
-        } else {
-          // Registrar hora de entrada
-          await supabase
-            .from('usuarios')
-            .update({ ultima_entrada: new Date().toISOString() })
-            .eq('id', data.id);
-
-          mensaje.innerHTML = `✅ <strong>Bienvenido, ${data.nombre}</strong> | Rol: <strong>${data.rol}</strong> | Entrada registrada ✅`;
-
-          const menu = document.createElement('div');
-          menu.className = 'rol-menu';
-
-          if (data.rol === 'admin') {
-            menu.innerHTML = `
-              <h3 style="margin-top: 20px;">🛠️ Panel de administración</h3>
-
-              <form id="formCrearUsuario" style="margin-top: 15px; background: #f8f8f8; padding: 20px; border-radius: 12px;">
-                <h4>➕ Crear nuevo usuario</h4>
-                <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
-                <input type="password" id="nuevoNip" placeholder="NIP" required><br>
-                <select id="nuevoRol" required>
-                  <option value="">Selecciona un rol</option>
-                  <option value="admin">admin</option>
-                  <option value="supervisor">supervisor</option>
-                  <option value="empleado">empleado</option>
-                </select><br>
-                <button type="submit">Crear usuario</button>
-              </form>
-              <div id="crearResultado" style="margin-top: 10px;"></div>
-            `;
-          } else if (data.rol === 'supervisor') {
-            menu.innerHTML = `<button onclick="alert('Viendo reportes')">📊 Ver reportes</button>`;
-          } else if (data.rol === 'empleado') {
-            menu.innerHTML = `<button onclick="alert('Accediendo al horario')">🕒 Ver horario</button>`;
-          }
-
-          mensaje.appendChild(menu);
-
-          // Activar formulario de creación si existe
-          const crearForm = document.getElementById('formCrearUsuario');
-          if (crearForm) {
-            crearForm.addEventListener('submit', async (e) => {
-              e.preventDefault();
-              const nombreNuevo = document.getElementById('nuevoNombre').value.trim();
-              const nipNuevo = document.getElementById('nuevoNip').value.trim();
-              const rolNuevo = document.getElementById('nuevoRol').value;
-              const resultado = document.getElementById('crearResultado');
-
-              if (!nombreNuevo || !nipNuevo || !rolNuevo) {
-                resultado.textContent = '⚠️ Todos los campos son obligatorios.';
-                resultado.style.color = 'orange';
-                return;
-              }
-
-              const { error } = await supabase
-                .from('usuarios')
-                .insert([{ nombre: nombreNuevo, nip: nipNuevo, rol: rolNuevo, activo: true }]);
-
-              if (error) {
-                resultado.textContent = '❌ Error al crear usuario.';
-                resultado.style.color = 'red';
-              } else {
-                resultado.textContent = `✅ Usuario ${nombreNuevo} creado exitosamente.`;
-                resultado.style.color = 'green';
-                crearForm.reset();
-              }
-            });
-          }
-        }
+        const tabla = document.getElementById('tablaChecadas');
+        tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Hora de entrada</th></tr>';
+        data.forEach(user => {
+          const fila = document.createElement('tr');
+          fila.innerHTML = `<td>${user.nombre}</td><td>${user.rol}</td><td>${new Date(user.ultima_entrada).toLocaleTimeString()}</td>`;
+          tabla.appendChild(fila);
+        });
       });
+
+      // Al cargar
+      cargarUsuarios();
     });
   </script>
 </head>
 <body>
-  <h2>Checador Jeeapcel</h2>
-  <form id="loginForm">
-    <label>Nombre:</label><br />
-    <input type="text" id="nombre" required /><br />
+  <h2>👑 Panel de Administración Jeeapcel</h2>
 
-    <label>NIP:</label><br />
-    <input type="password" id="nip" required /><br />
+  <div class="panel">
+    <h3>➕ Crear Usuario</h3>
+    <form id="formCrear">
+      <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
+      <input type="password" id="nuevoNip" placeholder="NIP" required><br>
+      <select id="nuevoRol" required>
+        <option value="">Selecciona un rol</option>
+        <option value="admin">admin</option>
+        <option value="supervisor">supervisor</option>
+        <option value="empleado">empleado</option>
+      </select><br>
+      <button type="submit">Crear</button>
+    </form>
+  </div>
 
-    <button type="submit">Entrar</button>
-  </form>
+  <div class="panel">
+    <h3>👁️ Usuarios activos</h3>
+    <table id="tablaUsuarios"></table>
+  </div>
+
+  <div class="panel">
+    <h3>📅 Ver checadas por fecha</h3>
+    <form id="formFecha">
+      <input type="date" id="fechaBuscada" required>
+      <button type="submit">Buscar</button>
+    </form>
+    <table id="tablaChecadas"></table>
+  </div>
 
   <div id="mensaje"></div>
 </body>
