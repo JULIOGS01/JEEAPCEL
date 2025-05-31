@@ -33,7 +33,7 @@
             .from('usuarios')
             .select('*')
             .eq('nombre', nombre)
-            .eq('nip', nip)
+            .eq('nip', nip.toString())
             .eq('activo', true)
             .single();
 
