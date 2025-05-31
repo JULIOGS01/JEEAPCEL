@@ -97,7 +97,8 @@
         verUsuarios: document.getElementById('seccionUsuarios'),
         checadas: document.getElementById('seccionChecadas'),
         aviso: document.getElementById('seccionAviso'),
-        reporte: document.getElementById('seccionReporte')
+        reporte: document.getElementById('seccionReporte'),
+        checador: document.getElementById('seccionChecador')
       };
 let usuarioActual = null;
       adminPanel.style.display = 'none';
@@ -106,6 +107,7 @@ let usuarioActual = null;
 const btnCheckOut = document.getElementById('btnCheckOut');
 const sucursalMostrada = document.getElementById('sucursalMostrada');
 
+let usuarioActual = null; // se asignará tras login
 
 btnCheckIn.addEventListener('click', async () => {
   const ahora = new Date().toISOString();
@@ -180,36 +182,30 @@ cargarNombresParaFiltro();
             adminPanel.style.display = 'block';
           }
           if (data.rol === 'empleado') {
-  const selector = document.createElement('select');
-['A', 'B', 'C', 'D', 'E', 'F'].forEach(s => {
-  const opt = document.createElement('option');
-  opt.value = s;
-  opt.textContent = 'Sucursal ' + s;
-  selector.appendChild(opt);
+  const selectSucursal = document.createElement('select');
+['A', 'B', 'C', 'D', 'E', 'F'].forEach(suc => {
+  const option = document.createElement('option');
+  option.value = suc;
+  option.textContent = `Sucursal ${suc}`;
+  selectSucursal.appendChild(option);
 });
 
 const confirmarBtn = document.createElement('button');
 confirmarBtn.textContent = 'Confirmar sucursal';
 confirmarBtn.style.marginTop = '10px';
 
-mensaje.innerHTML = '<b>Selecciona tu sucursal:</b><br>';
-mensaje.appendChild(selector);
+mensaje.textContent = '';
+mensaje.appendChild(selectSucursal);
 mensaje.appendChild(confirmarBtn);
 
 confirmarBtn.addEventListener('click', () => {
-  const sucursal = selector.value;
+  const sucursal = selectSucursal.value;
   localStorage.setItem('sucursalEmpleado', sucursal);
   usuarioActual = data;
   sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
-  mensaje.textContent = `✅ Entrada registrada como ${data.nombre}`;
+  mensaje.textContent = '';
   mostrarSeccion('checador');
 });
-return;
-  }
-  localStorage.setItem('sucursalEmpleado', sucursal);
-            usuarioActual = data;
-sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
-  mostrarSeccion('checador');
 }
         }
       
@@ -308,7 +304,39 @@ sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
         secciones[id].style.display = 'block';
         if (id === 'verUsuarios') cargarUsuarios();
       };
-      
+      const btnCheckIn = document.getElementById('btnCheckIn');
+const btnCheckOut = document.getElementById('btnCheckOut');
+const sucursalMostrada = document.getElementById('sucursalMostrada');
+
+btnCheckIn.addEventListener('click', async () => {
+  const ahora = new Date().toISOString();
+  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
+  if (!usuarioActual) return;
+
+  await supabase.from('checadas').insert([{
+    nombre: usuarioActual.nombre,
+    sucursal,
+    tipo: 'entrada',
+    hora: ahora
+  }]);
+
+  mensaje.textContent = `✅ Entrada registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
+});
+
+btnCheckOut.addEventListener('click', async () => {
+  const ahora = new Date().toISOString();
+  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
+  if (!usuarioActual) return;
+
+  await supabase.from('checadas').insert([{
+    nombre: usuarioActual.nombre,
+    sucursal,
+    tipo: 'salida',
+    hora: ahora
+  }]);
+
+  mensaje.textContent = `🔴 Salida registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
+});
     });
   </script>
 </head>
@@ -416,4 +444,4 @@ sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
 
   <div id="mensaje"></div>
 </body>
-</html>
+</html>.  
