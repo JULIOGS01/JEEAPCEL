@@ -180,10 +180,31 @@ cargarNombresParaFiltro();
             adminPanel.style.display = 'block';
           }
           if (data.rol === 'empleado') {
-  const sucursal = prompt('Selecciona tu sucursal (A, B, C, D, E, F):');
-  if (!['A', 'B', 'C', 'D', 'E', 'F'].includes(sucursal)) {
-    mensaje.textContent = '❌ Sucursal no válida. Intenta de nuevo.';
-    return;
+  const selector = document.createElement('select');
+['A', 'B', 'C', 'D', 'E', 'F'].forEach(s => {
+  const opt = document.createElement('option');
+  opt.value = s;
+  opt.textContent = 'Sucursal ' + s;
+  selector.appendChild(opt);
+});
+
+const confirmarBtn = document.createElement('button');
+confirmarBtn.textContent = 'Confirmar sucursal';
+confirmarBtn.style.marginTop = '10px';
+
+mensaje.innerHTML = '<b>Selecciona tu sucursal:</b><br>';
+mensaje.appendChild(selector);
+mensaje.appendChild(confirmarBtn);
+
+confirmarBtn.addEventListener('click', () => {
+  const sucursal = selector.value;
+  localStorage.setItem('sucursalEmpleado', sucursal);
+  usuarioActual = data;
+  sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
+  mensaje.textContent = `✅ Entrada registrada como ${data.nombre}`;
+  mostrarSeccion('checador');
+});
+return;
   }
   localStorage.setItem('sucursalEmpleado', sucursal);
             usuarioActual = data;
