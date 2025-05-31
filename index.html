@@ -102,6 +102,41 @@
 
       adminPanel.style.display = 'none';
       cerrarSesion.style.display = 'none';
+      const btnCheckIn = document.getElementById('btnCheckIn');
+const btnCheckOut = document.getElementById('btnCheckOut');
+const sucursalMostrada = document.getElementById('sucursalMostrada');
+
+let usuarioActual = null; // se asignará tras login
+
+btnCheckIn.addEventListener('click', async () => {
+  const ahora = new Date().toISOString();
+  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
+  if (!usuarioActual) return;
+
+  await supabase.from('checadas').insert([{
+    nombre: usuarioActual.nombre,
+    sucursal,
+    tipo: 'entrada',
+    hora: ahora
+  }]);
+
+  mensaje.textContent = `✅ Entrada registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
+});
+
+btnCheckOut.addEventListener('click', async () => {
+  const ahora = new Date().toISOString();
+  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
+  if (!usuarioActual) return;
+
+  await supabase.from('checadas').insert([{
+    nombre: usuarioActual.nombre,
+    sucursal,
+    tipo: 'salida',
+    hora: ahora
+  }]);
+
+  mensaje.textContent = `🔴 Salida registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
+});
 
       // Cargar nombres al filtro de usuarios
 async function cargarNombresParaFiltro() {
@@ -157,41 +192,7 @@ sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
   mostrarSeccion('checador');
 }
         }
-        const btnCheckIn = document.getElementById('btnCheckIn');
-const btnCheckOut = document.getElementById('btnCheckOut');
-const sucursalMostrada = document.getElementById('sucursalMostrada');
-
-let usuarioActual = null; // se asignará tras login
-
-btnCheckIn.addEventListener('click', async () => {
-  const ahora = new Date().toISOString();
-  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
-  if (!usuarioActual) return;
-
-  await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    sucursal,
-    tipo: 'entrada',
-    hora: ahora
-  }]);
-
-  mensaje.textContent = `✅ Entrada registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
-});
-
-btnCheckOut.addEventListener('click', async () => {
-  const ahora = new Date().toISOString();
-  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
-  if (!usuarioActual) return;
-
-  await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    sucursal,
-    tipo: 'salida',
-    hora: ahora
-  }]);
-
-  mensaje.textContent = `🔴 Salida registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
-});
+      
       });
 
       cerrarSesion.addEventListener('click', () => {
