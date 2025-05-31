@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Checador Jeeapcel</title>
   <style>
     body {
@@ -30,7 +30,7 @@
       font-weight: bold;
     }
 
-    input {
+    input, select {
       padding: 8px 12px;
       margin-top: 5px;
       width: 100%;
@@ -103,7 +103,7 @@
         if (error || !data) {
           mensaje.innerHTML = '❌ <span style="color:red;">Nombre o NIP incorrecto.</span>';
         } else {
-          // Actualizar hora de entrada
+          // Registrar hora de entrada
           await supabase
             .from('usuarios')
             .update({ ultima_entrada: new Date().toISOString() })
@@ -115,16 +115,61 @@
           menu.className = 'rol-menu';
 
           if (data.rol === 'admin') {
-            menu.innerHTML = `<button onclick="alert('Entrando al panel de administración')">🛠️ Panel de administración</button>`;
+            menu.innerHTML = `
+              <h3 style="margin-top: 20px;">🛠️ Panel de administración</h3>
+
+              <form id="formCrearUsuario" style="margin-top: 15px; background: #f8f8f8; padding: 20px; border-radius: 12px;">
+                <h4>➕ Crear nuevo usuario</h4>
+                <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
+                <input type="password" id="nuevoNip" placeholder="NIP" required><br>
+                <select id="nuevoRol" required>
+                  <option value="">Selecciona un rol</option>
+                  <option value="admin">admin</option>
+                  <option value="supervisor">supervisor</option>
+                  <option value="empleado">empleado</option>
+                </select><br>
+                <button type="submit">Crear usuario</button>
+              </form>
+              <div id="crearResultado" style="margin-top: 10px;"></div>
+            `;
           } else if (data.rol === 'supervisor') {
             menu.innerHTML = `<button onclick="alert('Viendo reportes')">📊 Ver reportes</button>`;
           } else if (data.rol === 'empleado') {
             menu.innerHTML = `<button onclick="alert('Accediendo al horario')">🕒 Ver horario</button>`;
-          } else {
-            menu.innerHTML = `<p>Rol no reconocido.</p>`;
           }
 
           mensaje.appendChild(menu);
+
+          // Activar formulario de creación si existe
+          const crearForm = document.getElementById('formCrearUsuario');
+          if (crearForm) {
+            crearForm.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const nombreNuevo = document.getElementById('nuevoNombre').value.trim();
+              const nipNuevo = document.getElementById('nuevoNip').value.trim();
+              const rolNuevo = document.getElementById('nuevoRol').value;
+              const resultado = document.getElementById('crearResultado');
+
+              if (!nombreNuevo || !nipNuevo || !rolNuevo) {
+                resultado.textContent = '⚠️ Todos los campos son obligatorios.';
+                resultado.style.color = 'orange';
+                return;
+              }
+
+              const { error } = await supabase
+                .from('usuarios')
+                .insert([{ nombre: nombreNuevo, nip: nipNuevo, rol: rolNuevo, activo: true }]);
+
+              if (error) {
+                resultado.textContent = '❌ Error al crear usuario.';
+                resultado.style.color = 'red';
+              } else {
+                resultado.textContent = `✅ Usuario ${nombreNuevo} creado exitosamente.`;
+                resultado.style.color = 'green';
+                crearForm.reset();
+              }
+            });
+          }
         }
       });
     });
