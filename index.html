@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checador Jeeapcel</title>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabaseUrl = 'https://mubtfuksnxtbjxrrwzqh.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('loginForm');
+      const mensaje = document.getElementById('mensaje');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const nombre = document.getElementById('nombre').value.trim();
+        const nip = document.getElementById('nip').value.trim();
+
+        const { data, error } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('nombre', nombre)
+          .eq('nip', nip)
+          .eq('activo', true)
+          .single();
+
+        if (error || !data) {
+          mensaje.textContent = '❌ Nombre o NIP incorrecto.';
+        } else {
+          mensaje.textContent = `✅ Bienvenido, ${data.nombre} | Rol: ${data.rol}`;
+        }
+      });
+    });
+  </script>
+</head>
+<body>
+  <h2>Checador Jeeapcel</h2>
+  <form id="loginForm">
+    <label>Nombre:</label><br />
+    <input type="text" id="nombre" required /><br /><br />
+    <label>NIP:</label><br />
+    <input type="password" id="nip" required /><br /><br />
+    <button type="submit">Entrar</button>
+  </form>
+  <p id="mensaje"></p>
+</body>
+</html>
