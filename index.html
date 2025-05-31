@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Checador Jeeapcel - Panel Admin</title>
+  <title>Checador Jeeapcel - Panel</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -104,13 +104,14 @@
         if (error || !data) {
           mensaje.textContent = '❌ Usuario o NIP incorrecto';
         } else {
-          mensaje.textContent = `✅ Bienvenido, ${data.nombre}`;
+          mensaje.textContent = `✅ Bienvenido, ${data.nombre} | Rol: ${data.rol}`;
+          loginForm.style.display = 'none';
+
           if (data.rol === 'admin') {
-            loginForm.style.display = 'none';
             adminPanel.style.display = 'block';
             cargarUsuarios();
           } else {
-            mensaje.textContent = '⚠️ Solo los administradores pueden entrar aquí';
+            mensaje.textContent += ' (🔒 Sin acceso al panel de administrador)';
           }
         }
       });
@@ -175,7 +176,7 @@
   </script>
 </head>
 <body>
-  <h2>👑 Panel de Administración Jeeapcel</h2>
+  <h2>🔐 Iniciar sesión en Jeeapcel</h2>
   <form id="loginForm">
     <input type="text" id="nombre" placeholder="Nombre" required><br>
     <input type="password" id="nip" placeholder="NIP" required><br>
