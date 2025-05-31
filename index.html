@@ -97,8 +97,7 @@
         verUsuarios: document.getElementById('seccionUsuarios'),
         checadas: document.getElementById('seccionChecadas'),
         aviso: document.getElementById('seccionAviso'),
-        reporte: document.getElementById('seccionReporte'),
-        checador: document.getElementById('seccionChecador')
+        reporte: document.getElementById('seccionReporte')
       };
 let usuarioActual = null;
       adminPanel.style.display = 'none';
@@ -182,30 +181,15 @@ cargarNombresParaFiltro();
             adminPanel.style.display = 'block';
           }
           if (data.rol === 'empleado') {
-  const selectSucursal = document.createElement('select');
-['A', 'B', 'C', 'D', 'E', 'F'].forEach(suc => {
-  const option = document.createElement('option');
-  option.value = suc;
-  option.textContent = `Sucursal ${suc}`;
-  selectSucursal.appendChild(option);
-});
-
-const confirmarBtn = document.createElement('button');
-confirmarBtn.textContent = 'Confirmar sucursal';
-confirmarBtn.style.marginTop = '10px';
-
-mensaje.textContent = '';
-mensaje.appendChild(selectSucursal);
-mensaje.appendChild(confirmarBtn);
-
-confirmarBtn.addEventListener('click', () => {
-  const sucursal = selectSucursal.value;
+  const sucursal = prompt('Selecciona tu sucursal (A, B, C, D, E, F):');
+  if (!['A', 'B', 'C', 'D', 'E', 'F'].includes(sucursal)) {
+    mensaje.textContent = '❌ Sucursal no válida. Intenta de nuevo.';
+    return;
+  }
   localStorage.setItem('sucursalEmpleado', sucursal);
-  usuarioActual = data;
-  sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
-  mensaje.textContent = '';
+            usuarioActual = data;
+sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
   mostrarSeccion('checador');
-});
 }
         }
       
