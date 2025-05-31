@@ -1,4 +1,3 @@
-<!-- INICIO PARTE 1 DE 2 -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -76,24 +75,21 @@
     .seccion {
       display: none;
     }
-
-    .check-buttons {
-      display: flex;
-      justify-content: space-between;
-      gap: 10px;
-    }
   </style>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    const supabase = createClient('https://YOUR_SUPABASE_URL.supabase.co', 'YOUR_SUPABASE_ANON_KEY');
+    const supabase = createClient(
+      'https://mubtfuksnxtbjxrrwzqh.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
+    );
 
-    document.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', () => {
       const loginForm = document.getElementById('loginForm');
-      const mensaje = document.getElementById('mensaje');
-      const adminPanel = document.getElementById('adminPanel');
-      const cerrarSesion = document.getElementById('cerrarSesion');
       const loginTitle = document.getElementById('loginTitle');
+      const adminPanel = document.getElementById('adminPanel');
+      const mensaje = document.getElementById('mensaje');
+      const cerrarSesion = document.getElementById('cerrarSesion');
       const bienvenida = document.getElementById('bienvenida');
 
       const secciones = {
@@ -106,6 +102,23 @@
 
       adminPanel.style.display = 'none';
       cerrarSesion.style.display = 'none';
+
+      // Cargar nombres al filtro de usuarios
+async function cargarNombresParaFiltro() {
+  const { data } = await supabase
+    .from('usuarios')
+    .select('nombre')
+    .eq('activo', true);
+
+  const select = document.getElementById('filtroNombre');
+  data.forEach(user => {
+    const option = document.createElement('option');
+    option.value = user.nombre;
+    option.textContent = user.nombre;
+    select.appendChild(option);
+  });
+}
+cargarNombresParaFiltro();
 
       loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -129,59 +142,15 @@
           cerrarSesion.style.display = 'inline-block';
           bienvenida.textContent = `Bienvenido, ${data.nombre}`;
 
-          localStorage.setItem('nombreUsuario', data.nombre);
-          localStorage.setItem('rolUsuario', data.rol);
-
           if (data.rol === 'admin') {
             adminPanel.style.display = 'block';
-          } else {
-            document.getElementById('empleadoPanel').style.display = 'block';
-            seleccionarSucursal();
           }
         }
       });
 
       cerrarSesion.addEventListener('click', () => {
-        localStorage.clear();
         location.reload();
       });
-
-      function mostrarSeccion(nombre) {
-        Object.values(secciones).forEach(sec => sec.style.display = 'none');
-        secciones[nombre].style.display = 'block';
-      }
-
-      window.mostrarSeccion = mostrarSeccion;
-<!-- FIN PARTE 1 DE 2 -->
-<!-- FIN PARTE 1 DE 2 -->
-<!-- INICIO PARTE 2 DE 2 -->
-      function seleccionarSucursal() {
-        const contenedor = document.getElementById('seleccionarSucursal');
-        contenedor.innerHTML = `
-          <h4>Selecciona tu sucursal</h4>
-          <select id="sucursalEmpleado">
-            <option value="">Selecciona</option>
-            <option value="A">Sucursal A</option>
-            <option value="B">Sucursal B</option>
-            <option value="C">Sucursal C</option>
-            <option value="D">Sucursal D</option>
-            <option value="E">Sucursal E</option>
-            <option value="F">Sucursal F</option>
-          </select>
-          <button onclick="confirmarSucursal()">Confirmar</button>
-        `;
-      }
-
-      window.confirmarSucursal = () => {
-        const sucursal = document.getElementById('sucursalEmpleado').value;
-        if (!sucursal) {
-          alert('Selecciona una sucursal');
-          return;
-        }
-        localStorage.setItem('sucursalEmpleado', sucursal);
-        document.getElementById('seleccionarSucursal').style.display = 'none';
-        document.getElementById('checadorEmpleado').style.display = 'block';
-      };
 
       document.getElementById('formCrear').addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -203,12 +172,13 @@
       async function cargarUsuarios() {
         const { data } = await supabase.from('usuarios').select('*').eq('activo', true);
         const tabla = document.getElementById('tablaUsuarios');
-        tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Desactivar</th></tr>';
+        tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Última entrada</th><th>Desactivar</th></tr>';
         data.forEach(user => {
           const fila = document.createElement('tr');
           fila.innerHTML = `
             <td>${user.nombre}</td>
             <td>${user.rol}</td>
+            <td>${user.ultima_entrada ? new Date(user.ultima_entrada).toLocaleString() : '-'}</td>
             <td><button onclick="desactivarUsuario(${user.id})">❌</button></td>
           `;
           tabla.appendChild(fila);
@@ -221,85 +191,55 @@
         cargarUsuarios();
       };
 
-      async function cargarChecadas() {
-        const fecha = document.getElementById('fechaBuscada').value;
-        const empleadoFiltro = document.getElementById('filtroEmpleado').value;
-        const sucursalFiltro = document.getElementById('filtroSucursal').value;
+      document.getElementById('formFecha').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const fecha = document.getElementById('fechaBuscada').value;
+  const nombre = document.getElementById('filtroNombre').value;
+  const sucursal = document.getElementById('filtroSucursal').value;
 
-        let query = supabase.from('checadas').select('*');
+  let query = supabase
+    .from('usuarios')
+    .select('*')
+    .gte('ultima_entrada', fecha + 'T00:00:00')
+    .lte('ultima_entrada', fecha + 'T23:59:59');
 
-        if (fecha) {
-          query = query.gte('fecha', fecha + 'T00:00:00').lte('fecha', fecha + 'T23:59:59');
-        }
-        if (empleadoFiltro) query = query.eq('nombre', empleadoFiltro);
-        if (sucursalFiltro) query = query.eq('sucursal', sucursalFiltro);
+  if (nombre) query = query.eq('nombre', nombre);
+  if (sucursal) query = query.eq('sucursal', sucursal);
 
-        const { data } = await query;
-        const tabla = document.getElementById('tablaChecadas');
-        tabla.innerHTML = '<tr><th>Nombre</th><th>Tipo</th><th>Sucursal</th><th>Hora</th></tr>';
-        data.forEach(c => {
-          const fila = document.createElement('tr');
-          fila.innerHTML = `
-            <td>${c.nombre}</td>
-            <td>${c.tipo}</td>
-            <td>${c.sucursal}</td>
-            <td>${new Date(c.fecha).toLocaleTimeString()}</td>
-          `;
-          tabla.appendChild(fila);
-        });
-      }
+  const { data } = await query;
 
-      document.getElementById('formFecha').addEventListener('submit', (e) => {
-        e.preventDefault();
-        cargarChecadas();
-      });
+  const tabla = document.getElementById('tablaChecadas');
+  tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Sucursal</th><th>Hora de entrada</th></tr>';
+  data.forEach(user => {
+    const fila = document.createElement('tr');
+    fila.innerHTML = `<td>${user.nombre}</td><td>${user.rol}</td><td>${user.sucursal || '-'}</td><td>${new Date(user.ultima_entrada).toLocaleTimeString()}</td>`;
+    tabla.appendChild(fila);
+  });
+});
 
-      document.getElementById('formAviso').addEventListener('submit', async (e) => {
+      document.getElementById('formAviso').addEventListener('submit', (e) => {
         e.preventDefault();
         const texto = document.getElementById('avisoTexto').value;
         const rol = document.getElementById('rolDestino').value;
         const sucursal = document.getElementById('sucursales').value;
-
-        const { error } = await supabase.from('avisos').insert([{ texto, rol, sucursal, fecha: new Date().toISOString() }]);
-
-        if (error) {
-          mensaje.textContent = '❌ Error al enviar aviso';
-        } else {
-          mensaje.textContent = '✅ Aviso enviado';
-          document.getElementById('formAviso').reset();
-        }
+        console.log('Aviso creado para', rol, 'en', sucursal, ':', texto);
+        mensaje.textContent = `📣 Aviso enviado a ${rol} en ${sucursal}`;
+        e.target.reset();
       });
 
       document.getElementById('formReporte').addEventListener('submit', (e) => {
         e.preventDefault();
-        const nuevoLink = document.getElementById('nuevoLink').value;
-        localStorage.setItem('linkReporte', nuevoLink);
-        mensaje.textContent = '🔗 Link actualizado';
+        const link = document.getElementById('nuevoLink').value;
+        localStorage.setItem('linkReporte', link);
+        mensaje.textContent = '🔗 Link actualizado correctamente';
       });
 
-      document.getElementById('cerrarSesionEmpleado').addEventListener('click', () => {
-        localStorage.clear();
-        location.reload();
-      });
-
-      window.checkIn = async () => {
-        const nombre = localStorage.getItem('nombreUsuario');
-        const sucursal = localStorage.getItem('sucursalEmpleado');
-        const { error } = await supabase.from('checadas').insert([{ nombre, tipo: 'entrada', sucursal, fecha: new Date().toISOString() }]);
-        mensaje.textContent = error ? '❌ Error al registrar entrada' : `✅ Entrada registrada para ${nombre}`;
-      };
-
-      window.checkOut = async () => {
-        const nombre = localStorage.getItem('nombreUsuario');
-        const sucursal = localStorage.getItem('sucursalEmpleado');
-        const { error } = await supabase.from('checadas').insert([{ nombre, tipo: 'salida', sucursal, fecha: new Date().toISOString() }]);
-        mensaje.textContent = error ? '❌ Error al registrar salida' : `✅ Salida registrada para ${nombre}`;
-      };
-
-      window.abrirReporte = () => {
-        const link = localStorage.getItem('linkReporte');
-        if (link) window.open(link, '_blank');
-        else mensaje.textContent = '⚠️ No hay link asignado';
+      window.mostrarSeccion = (id) => {
+        for (const key in secciones) {
+          secciones[key].style.display = 'none';
+        }
+        secciones[id].style.display = 'block';
+        if (id === 'verUsuarios') cargarUsuarios();
       };
     });
   </script>
@@ -316,36 +256,68 @@
   <div class="panel" id="adminPanel">
     <h3>🛠️ Panel de administrador</h3>
     <button onclick="mostrarSeccion('crear')">➕ Crear Usuario</button>
-    <button onclick="mostrarSeccion('verUsuarios')">👁️ Ver Usuarios</button>
-    <button onclick="mostrarSeccion('checadas')">📅 Checadas</button>
-    <button onclick="mostrarSeccion('aviso')">📣 Aviso</button>
-    <button onclick="mostrarSeccion('reporte')">🔗 Reporte</button>
+    <button onclick="mostrarSeccion('verUsuarios')">👁️ Ver Usuarios Activos</button>
+    <button onclick="mostrarSeccion('checadas')">📅 Ver Checadas por Fecha</button>
+    <button onclick="mostrarSeccion('aviso')">📣 Crear Aviso</button>
+    <button onclick="mostrarSeccion('reporte')">🔗 Actualizar Link Reportes</button>
     <button id="cerrarSesion">🔓 Cerrar sesión</button>
+
     <div id="seccionCrear" class="seccion">
       <h4>➕ Crear Usuario</h4>
       <form id="formCrear">
-        <input type="text" id="nuevoNombre" placeholder="Nombre" required>
-        <input type="password" id="nuevoNip" placeholder="NIP" required>
+        <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
+        <input type="password" id="nuevoNip" placeholder="NIP" required><br>
         <select id="nuevoRol" required>
           <option value="">Selecciona un rol</option>
           <option value="admin">admin</option>
           <option value="supervisor">supervisor</option>
           <option value="empleado">empleado</option>
-        </select>
+        </select><br>
         <button type="submit">Crear</button>
       </form>
     </div>
+
     <div id="seccionUsuarios" class="seccion">
-      <h4>Usuarios activos</h4>
+      <h4>👁️ Usuarios activos</h4>
       <table id="tablaUsuarios"></table>
     </div>
+
     <div id="seccionChecadas" class="seccion">
-      <h4>Checadas por fecha</h4>
-      <form id="formFecha">
-        <input type="date" id="fechaBuscada" required>
-        <select id="filtroEmpleado"></select>
-        <select id="filtroSucursal">
-          <option value="">Todas</option>
+  <h4>📅 Checadas por fecha</h4>
+  <form id="formFecha">
+    <input type="date" id="fechaBuscada" required><br>
+    
+    <select id="filtroNombre">
+      <option value="">Todos los usuarios</option>
+    </select>
+
+    <select id="filtroSucursal">
+      <option value="">Todas las sucursales</option>
+      <option value="A">Sucursal A</option>
+      <option value="B">Sucursal B</option>
+      <option value="C">Sucursal C</option>
+      <option value="D">Sucursal D</option>
+      <option value="E">Sucursal E</option>
+      <option value="F">Sucursal F</option>
+    </select>
+
+    <button type="submit">Buscar</button>
+  </form>
+  <table id="tablaChecadas"></table>
+</div>
+
+    <div id="seccionAviso" class="seccion">
+      <h4>📣 Crear Aviso</h4>
+      <form id="formAviso">
+        <textarea id="avisoTexto" placeholder="Escribe el aviso..." required></textarea><br>
+        <select id="rolDestino">
+          <option value="todos">Todos los roles</option>
+          <option value="admin">Solo admins</option>
+          <option value="supervisor">Supervisores</option>
+          <option value="empleado">Empleados</option>
+        </select>
+        <select id="sucursales">
+          <option value="todas">Todas las sucursales</option>
           <option value="A">Sucursal A</option>
           <option value="B">Sucursal B</option>
           <option value="C">Sucursal C</option>
@@ -353,53 +325,19 @@
           <option value="E">Sucursal E</option>
           <option value="F">Sucursal F</option>
         </select>
-        <button type="submit">Buscar</button>
-      </form>
-      <table id="tablaChecadas"></table>
-    </div>
-    <div id="seccionAviso" class="seccion">
-      <h4>Crear Aviso</h4>
-      <form id="formAviso">
-        <textarea id="avisoTexto" required></textarea>
-        <select id="rolDestino">
-          <option value="todos">Todos</option>
-          <option value="admin">Admin</option>
-          <option value="supervisor">Supervisor</option>
-          <option value="empleado">Empleado</option>
-        </select>
-        <select id="sucursales">
-          <option value="todas">Todas</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-          <option value="D">D</option>
-          <option value="E">E</option>
-          <option value="F">F</option>
-        </select>
-        <button type="submit">Enviar</button>
+        <button type="submit">Enviar aviso</button>
       </form>
     </div>
+
     <div id="seccionReporte" class="seccion">
-      <h4>Actualizar Link</h4>
+      <h4>🔗 Actualizar link de reportes</h4>
       <form id="formReporte">
-        <input type="url" id="nuevoLink" required>
-        <button type="submit">Guardar</button>
+        <input type="url" id="nuevoLink" placeholder="Pega aquí el nuevo link del reporte" required>
+        <button type="submit">Actualizar</button>
       </form>
     </div>
   </div>
 
-  <div class="panel" id="empleadoPanel" style="display:none;">
-    <h3>👤 Panel Empleado</h3>
-    <div id="seleccionarSucursal"></div>
-    <div id="checadorEmpleado" style="display:none;">
-      <p>Sucursal: <span id="sucursalActual"></span></p>
-      <button onclick="checkIn()">✅ Entrada</button>
-      <button onclick="checkOut()">❌ Salida</button>
-      <button onclick="abrirReporte()">📎 Ver Reporte</button>
-      <button id="cerrarSesionEmpleado">Cerrar sesión</button>
-    </div>
-  </div>
   <div id="mensaje"></div>
 </body>
 </html>
-<!-- FIN PARTE 2 DE 2 -->
