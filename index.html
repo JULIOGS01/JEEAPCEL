@@ -15,7 +15,7 @@
         const form = document.getElementById('loginForm');
         const mensaje = document.getElementById('mensaje');
 
-        // 🔍 PRUEBA DE CONEXIÓN GENERAL
+        // Prueba de conexión general
         supabase
           .from('usuarios')
           .select('*')
@@ -23,28 +23,25 @@
             console.log('🟢 Resultado de prueba:', data, error);
           });
 
-        // ✅ LOGIN FUNCIONAL
         form.addEventListener('submit', async (e) => {
           e.preventDefault();
 
           const nombre = document.getElementById('nombre').value.trim();
           const nip = document.getElementById('nip').value.trim();
 
-          // Imprimir lo que se está buscando
           console.log("Buscando con nombre:", nombre, "NIP:", nip);
 
           const { data, error } = await supabase
-  .from('usuarios')
-  .select('*')
-  .eq('nombre', nombre)
-  .eq('nip', nip.toString())
-  .eq('activo', true)
-  .single();
+            .from('usuarios')
+            .select('*')
+            .ilike('nombre', nombre)
+            .ilike('nip', nip)
+            .eq('activo', true)
+            .single();
 
           if (error || !data) {
             mensaje.textContent = '❌ Nombre o NIP incorrecto.';
           } else {
-            // Actualizar hora de entrada
             await supabase
               .from('usuarios')
               .update({ ultima_entrada: new Date().toISOString() })
