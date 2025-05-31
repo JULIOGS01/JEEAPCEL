@@ -1,69 +1,147 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Checador Jeeapcel</title>
-    <script type="module">
-      import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checador Jeeapcel</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(to bottom, #f0f4f8, #dbe9f4);
+      padding: 40px;
+      text-align: center;
+    }
 
-      const supabaseUrl = 'https://mubtfuksnxtbjxrrwzqh.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA';
-      const supabase = createClient(supabaseUrl, supabaseKey);
+    h2 {
+      font-size: 2em;
+      margin-bottom: 20px;
+      color: #222;
+    }
 
-      window.addEventListener('DOMContentLoaded', () => {
-        const form = document.getElementById('loginForm');
-        const mensaje = document.getElementById('mensaje');
+    form {
+      background: white;
+      display: inline-block;
+      padding: 20px 30px;
+      border-radius: 12px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
 
-        // Prueba de conexión general
-        supabase
+    label {
+      font-weight: bold;
+    }
+
+    input {
+      padding: 8px 12px;
+      margin-top: 5px;
+      width: 100%;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1em;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #0077cc;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background: #005fa3;
+    }
+
+    #mensaje {
+      margin-top: 20px;
+      font-size: 1.1em;
+    }
+
+    .rol-menu {
+      margin-top: 20px;
+    }
+
+    .rol-menu button {
+      margin: 8px;
+      background: #28a745;
+    }
+
+    .rol-menu button:hover {
+      background: #218838;
+    }
+  </style>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabaseUrl = 'https://mubtfuksnxtbjxrrwzqh.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA';
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('loginForm');
+      const mensaje = document.getElementById('mensaje');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const nombre = document.getElementById('nombre').value.trim();
+        const nip = document.getElementById('nip').value.trim();
+
+        const { data, error } = await supabase
           .from('usuarios')
           .select('*')
-          .then(({ data, error }) => {
-            console.log('🟢 Resultado de prueba:', data, error);
-          });
+          .ilike('nombre', nombre)
+          .ilike('nip', nip)
+          .eq('activo', true)
+          .single();
 
-        form.addEventListener('submit', async (e) => {
-          e.preventDefault();
-
-          const nombre = document.getElementById('nombre').value.trim();
-          const nip = document.getElementById('nip').value.trim();
-
-          console.log("Buscando con nombre:", nombre, "NIP:", nip);
-
-          const { data, error } = await supabase
+        if (error || !data) {
+          mensaje.innerHTML = '❌ <span style="color:red;">Nombre o NIP incorrecto.</span>';
+        } else {
+          // Actualizar hora de entrada
+          await supabase
             .from('usuarios')
-            .select('*')
-            .ilike('nombre', nombre)
-            .ilike('nip', nip)
-            .eq('activo', true)
-            .single();
+            .update({ ultima_entrada: new Date().toISOString() })
+            .eq('id', data.id);
 
-          if (error || !data) {
-            mensaje.textContent = '❌ Nombre o NIP incorrecto.';
+          mensaje.innerHTML = `✅ <strong>Bienvenido, ${data.nombre}</strong> | Rol: <strong>${data.rol}</strong> | Entrada registrada ✅`;
+
+          const menu = document.createElement('div');
+          menu.className = 'rol-menu';
+
+          if (data.rol === 'admin') {
+            menu.innerHTML = `<button onclick="alert('Entrando al panel de administración')">🛠️ Panel de administración</button>`;
+          } else if (data.rol === 'supervisor') {
+            menu.innerHTML = `<button onclick="alert('Viendo reportes')">📊 Ver reportes</button>`;
+          } else if (data.rol === 'empleado') {
+            menu.innerHTML = `<button onclick="alert('Accediendo al horario')">🕒 Ver horario</button>`;
           } else {
-            await supabase
-              .from('usuarios')
-              .update({ ultima_entrada: new Date().toISOString() })
-              .eq('id', data.id);
-
-            mensaje.textContent = `✅ Bienvenido, ${data.nombre} | Rol: ${data.rol} | Entrada registrada ✅`;
+            menu.innerHTML = `<p>Rol no reconocido.</p>`;
           }
-        });
+
+          mensaje.appendChild(menu);
+        }
       });
-    </script>
-  </head>
-  <body>
-    <h2>Checador Jeeapcel</h2>
-    <form id="loginForm">
-      <label>Nombre:</label><br />
-      <input type="text" id="nombre" required /><br /><br />
+    });
+  </script>
+</head>
+<body>
+  <h2>Checador Jeeapcel</h2>
+  <form id="loginForm">
+    <label>Nombre:</label><br />
+    <input type="text" id="nombre" required /><br />
 
-      <label>NIP:</label><br />
-      <input type="password" id="nip" required /><br /><br />
+    <label>NIP:</label><br />
+    <input type="password" id="nip" required /><br />
 
-      <button type="submit">Entrar</button>
-    </form>
-    <p id="mensaje"></p>
-  </body>
+    <button type="submit">Entrar</button>
+  </form>
+
+  <div id="mensaje"></div>
+</body>
 </html>
