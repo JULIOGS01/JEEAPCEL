@@ -34,12 +34,12 @@
           console.log("Buscando con nombre:", nombre, "NIP:", nip);
 
           const { data, error } = await supabase
-            .from('usuarios')
-            .select('*')
-            .ilike('nombre', nombre)
-            .ilike('nip', nip)
-            .eq('activo', true)
-            .single();
+  .from('usuarios')
+  .select('*')
+  .eq('nombre', nombre)
+  .eq('nip', nip.toString())
+  .eq('activo', true)
+  .single();
 
           if (error || !data) {
             mensaje.textContent = '❌ Nombre o NIP incorrecto.';
