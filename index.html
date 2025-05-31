@@ -91,7 +91,7 @@
       const mensaje = document.getElementById('mensaje');
       const cerrarSesion = document.getElementById('cerrarSesion');
       const bienvenida = document.getElementById('bienvenida');
-      
+
       const secciones = {
         crear: document.getElementById('seccionCrear'),
         verUsuarios: document.getElementById('seccionUsuarios'),
@@ -99,61 +99,9 @@
         aviso: document.getElementById('seccionAviso'),
         reporte: document.getElementById('seccionReporte')
       };
-let usuarioActual = null;
+
       adminPanel.style.display = 'none';
       cerrarSesion.style.display = 'none';
-      const btnCheckIn = document.getElementById('btnCheckIn');
-const btnCheckOut = document.getElementById('btnCheckOut');
-const sucursalMostrada = document.getElementById('sucursalMostrada');
-
-let usuarioActual = null; // se asignará tras login
-
-btnCheckIn.addEventListener('click', async () => {
-  const ahora = new Date().toISOString();
-  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
-  if (!usuarioActual) return;
-
-  await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    sucursal,
-    tipo: 'entrada',
-    hora: ahora
-  }]);
-
-  mensaje.textContent = `✅ Entrada registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
-});
-
-btnCheckOut.addEventListener('click', async () => {
-  const ahora = new Date().toISOString();
-  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
-  if (!usuarioActual) return;
-
-  await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    sucursal,
-    tipo: 'salida',
-    hora: ahora
-  }]);
-
-  mensaje.textContent = `🔴 Salida registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
-});
-
-      // Cargar nombres al filtro de usuarios
-async function cargarNombresParaFiltro() {
-  const { data } = await supabase
-    .from('usuarios')
-    .select('nombre')
-    .eq('activo', true);
-
-  const select = document.getElementById('filtroNombre');
-  data.forEach(user => {
-    const option = document.createElement('option');
-    option.value = user.nombre;
-    option.textContent = user.nombre;
-    select.appendChild(option);
-  });
-}
-cargarNombresParaFiltro();
 
       loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -180,19 +128,7 @@ cargarNombresParaFiltro();
           if (data.rol === 'admin') {
             adminPanel.style.display = 'block';
           }
-          if (data.rol === 'empleado') {
-  const sucursal = prompt('Selecciona tu sucursal (A, B, C, D, E, F):');
-  if (!['A', 'B', 'C', 'D', 'E', 'F'].includes(sucursal)) {
-    mensaje.textContent = '❌ Sucursal no válida. Intenta de nuevo.';
-    return;
-  }
-  localStorage.setItem('sucursalEmpleado', sucursal);
-            usuarioActual = data;
-sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
-  mostrarSeccion('checador');
-}
         }
-      
       });
 
       cerrarSesion.addEventListener('click', () => {
@@ -239,30 +175,22 @@ sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
       };
 
       document.getElementById('formFecha').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const fecha = document.getElementById('fechaBuscada').value;
-  const nombre = document.getElementById('filtroNombre').value;
-  const sucursal = document.getElementById('filtroSucursal').value;
+        e.preventDefault();
+        const fecha = document.getElementById('fechaBuscada').value;
+        const { data } = await supabase
+          .from('usuarios')
+          .select('*')
+          .gte('ultima_entrada', fecha + 'T00:00:00')
+          .lte('ultima_entrada', fecha + 'T23:59:59');
 
-  let query = supabase
-    .from('usuarios')
-    .select('*')
-    .gte('ultima_entrada', fecha + 'T00:00:00')
-    .lte('ultima_entrada', fecha + 'T23:59:59');
-
-  if (nombre) query = query.eq('nombre', nombre);
-  if (sucursal) query = query.eq('sucursal', sucursal);
-
-  const { data } = await query;
-
-  const tabla = document.getElementById('tablaChecadas');
-  tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Sucursal</th><th>Hora de entrada</th></tr>';
-  data.forEach(user => {
-    const fila = document.createElement('tr');
-    fila.innerHTML = `<td>${user.nombre}</td><td>${user.rol}</td><td>${user.sucursal || '-'}</td><td>${new Date(user.ultima_entrada).toLocaleTimeString()}</td>`;
-    tabla.appendChild(fila);
-  });
-});
+        const tabla = document.getElementById('tablaChecadas');
+        tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Hora de entrada</th></tr>';
+        data.forEach(user => {
+          const fila = document.createElement('tr');
+          fila.innerHTML = `<td>${user.nombre}</td><td>${user.rol}</td><td>${new Date(user.ultima_entrada).toLocaleTimeString()}</td>`;
+          tabla.appendChild(fila);
+        });
+      });
 
       document.getElementById('formAviso').addEventListener('submit', (e) => {
         e.preventDefault();
@@ -288,39 +216,6 @@ sucursalMostrada.textContent = `Sucursal: ${sucursal}`;
         secciones[id].style.display = 'block';
         if (id === 'verUsuarios') cargarUsuarios();
       };
-      const btnCheckIn = document.getElementById('btnCheckIn');
-const btnCheckOut = document.getElementById('btnCheckOut');
-const sucursalMostrada = document.getElementById('sucursalMostrada');
-
-btnCheckIn.addEventListener('click', async () => {
-  const ahora = new Date().toISOString();
-  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
-  if (!usuarioActual) return;
-
-  await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    sucursal,
-    tipo: 'entrada',
-    hora: ahora
-  }]);
-
-  mensaje.textContent = `✅ Entrada registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
-});
-
-btnCheckOut.addEventListener('click', async () => {
-  const ahora = new Date().toISOString();
-  const sucursal = localStorage.getItem('sucursalEmpleado') || '-';
-  if (!usuarioActual) return;
-
-  await supabase.from('checadas').insert([{
-    nombre: usuarioActual.nombre,
-    sucursal,
-    tipo: 'salida',
-    hora: ahora
-  }]);
-
-  mensaje.textContent = `🔴 Salida registrada: ${new Date(ahora).toLocaleTimeString()} en sucursal ${sucursal}`;
-});
     });
   </script>
 </head>
@@ -343,7 +238,6 @@ btnCheckOut.addEventListener('click', async () => {
     <button id="cerrarSesion">🔓 Cerrar sesión</button>
 
     <div id="seccionCrear" class="seccion">
-      
       <h4>➕ Crear Usuario</h4>
       <form id="formCrear">
         <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
@@ -358,41 +252,19 @@ btnCheckOut.addEventListener('click', async () => {
       </form>
     </div>
 
-    <div id="seccionChecador" class="seccion">
-  <h4>🕒 Checador</h4>
-  <p id="sucursalMostrada"></p>
-  <button id="btnCheckIn">✅ Check In</button>
-  <button id="btnCheckOut">🔴 Check Out</button>
-</div>
-
     <div id="seccionUsuarios" class="seccion">
       <h4>👁️ Usuarios activos</h4>
       <table id="tablaUsuarios"></table>
     </div>
 
     <div id="seccionChecadas" class="seccion">
-  <h4>📅 Checadas por fecha</h4>
-  <form id="formFecha">
-    <input type="date" id="fechaBuscada" required><br>
-    
-    <select id="filtroNombre">
-      <option value="">Todos los usuarios</option>
-    </select>
-
-    <select id="filtroSucursal">
-      <option value="">Todas las sucursales</option>
-      <option value="A">Sucursal A</option>
-      <option value="B">Sucursal B</option>
-      <option value="C">Sucursal C</option>
-      <option value="D">Sucursal D</option>
-      <option value="E">Sucursal E</option>
-      <option value="F">Sucursal F</option>
-    </select>
-
-    <button type="submit">Buscar</button>
-  </form>
-  <table id="tablaChecadas"></table>
-</div>
+      <h4>📅 Checadas por fecha</h4>
+      <form id="formFecha">
+        <input type="date" id="fechaBuscada" required>
+        <button type="submit">Buscar</button>
+      </form>
+      <table id="tablaChecadas"></table>
+    </div>
 
     <div id="seccionAviso" class="seccion">
       <h4>📣 Crear Aviso</h4>
@@ -428,4 +300,4 @@ btnCheckOut.addEventListener('click', async () => {
 
   <div id="mensaje"></div>
 </body>
-</html>.  
+</html>
