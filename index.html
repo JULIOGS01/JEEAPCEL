@@ -88,6 +88,7 @@
             const loginForm = document.getElementById('loginForm');
             const loginTitle = document.getElementById('loginTitle');
             const adminPanel = document.getElementById('adminPanel');
+            const empleadoPanel = document.getElementById('empleadoPanel');
             const mensaje = document.getElementById('mensaje');
             const cerrarSesion = document.getElementById('cerrarSesion');
             const bienvenida = document.getElementById('bienvenida');
@@ -97,10 +98,12 @@
                 verUsuarios: document.getElementById('seccionUsuarios'),
                 checadas: document.getElementById('seccionChecadas'),
                 aviso: document.getElementById('seccionAviso'),
-                reporte: document.getElementById('seccionReporte')
+                reporte: document.getElementById('seccionReporte'),
+                avisosEmpleado: document.getElementById('seccionAvisosEmpleado')
             };
 
             adminPanel.style.display = 'none';
+            empleadoPanel.style.display = 'none';
             cerrarSesion.style.display = 'none';
 
             loginForm.addEventListener('submit', async (e) => {
@@ -127,6 +130,15 @@
 
                     if (data.rol === 'admin') {
                         adminPanel.style.display = 'block';
+                    } else if (data.rol === 'empleado') {
+                        const sucursal = prompt("Selecciona tu sucursal (A, B, C, D, E, F):");
+                        if (['A', 'B', 'C', 'D', 'E', 'F'].includes(sucursal)) {
+                            empleadoPanel.style.display = 'block';
+                            document.getElementById('sucursalEmpleado').textContent = `Sucursal: ${sucursal}`;
+                            cargarAvisos();
+                        } else {
+                            mensaje.textContent = '❌ Sucursal no válida';
+                        }
                     }
                 }
             });
@@ -208,6 +220,17 @@
                 localStorage.setItem('linkReporte', link);
                 mensaje.textContent = '🔗 Link actualizado correctamente';
             });
+
+            async function cargarAvisos() {
+                const { data } = await supabase.from('avisos').select('*');
+                const tabla = document.getElementById('tablaAvisosEmpleado');
+                tabla.innerHTML = '<tr><th>Aviso</th><th>Rol</th><th>Sucursal</th></tr>';
+                data.forEach(aviso => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `<td>${aviso.texto}</td><td>${aviso.rol}</td><td>${aviso.sucursal}</td>`;
+                    tabla.appendChild(fila);
+                });
+            }
 
             window.mostrarSeccion = (id) => {
                 for (const key in secciones) {
@@ -295,6 +318,19 @@
                 <input type="url" id="nuevoLink" placeholder="Pega aquí el nuevo link del reporte" required>
                 <button type="submit">Actualizar</button>
             </form>
+        </div>
+    </div>
+
+    <div class="panel" id="empleadoPanel">
+        <h3>👨‍💼 Panel de Empleado</h3>
+        <h4 id="sucursalEmpleado"></h4>
+        <button onclick="mostrarSeccion('avisosEmpleado')">📣 Ver Avisos</button>
+        <button onclick="window.open(localStorage.getItem('linkReporte'), '_blank')">🔗 Link Reportes</button>
+        <button id="cerrarSesion">🔓 Cerrar sesión</button>
+
+        <div id="seccionAvisosEmpleado" class="seccion">
+            <h4>📣 Avisos</h4>
+            <table id="tablaAvisosEmpleado"></table>
         </div>
     </div>
 
