@@ -1,443 +1,303 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Checador Jeeapcel - Panel</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-    body {
-      font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #e0e7ff 0%, #eef3f8 100%);
-      padding: 40px 20px;
-      text-align: center;
-      color: #222;
-      min-height: 100vh;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    h2, h3, h4 {
-      margin: 0 0 15px 0;
-      font-weight: 600;
-    }
-    form, .panel, .seccion {
-      background: white;
-      display: inline-block;
-      padding: 25px 30px;
-      margin-top: 20px;
-      border-radius: 16px;
-      box-shadow: 0 12px 28px -8px rgba(0, 0, 0, 0.12);
-      text-align: left;
-      max-width: 520px;
-      width: 100%;
-      box-sizing: border-box;
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-    input, select, textarea {
-      padding: 12px 14px;
-      margin-top: 8px;
-      width: 100%;
-      margin-bottom: 16px;
-      border-radius: 8px;
-      border: 1.8px solid #d1d5db;
-      font-size: 1em;
-      font-weight: 500;
-      outline-offset: 2px;
-      transition: border-color 0.25s ease;
-      box-sizing: border-box;
-      font-family: inherit;
-    }
-    input:focus, select:focus, textarea:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 6px rgba(59, 130, 246, 0.4);
-    }
-    button {
-      padding: 12px 26px;
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 1.05em;
-      margin: 5px 4px;
-      box-shadow: 0 6px 12px rgba(37, 99, 235, 0.5);
-      transition: background-color 0.25s ease, transform 0.2s ease;
-      user-select: none;
-      width: auto;
-    }
-    button:hover, button:focus {
-      background: #1d4ed8;
-      transform: translateY(-2px);
-      outline: none;
-    }
-    button:active {
-      transform: translateY(0);
-      box-shadow: 0 3px 7px rgba(37, 99, 235, 0.6);
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      font-size: 0.95em;
-    }
-    table, th, td {
-      border: 1px solid #cbd5e1;
-    }
-    th, td {
-      padding: 12px 10px;
-      text-align: center;
-      vertical-align: middle;
-      color: #334155;
-    }
-    th {
-      background-color: #f1f5f9;
-      font-weight: 600;
-    }
-    #mensaje {
-      margin-top: 20px;
-      font-size: 1.2em;
-      font-weight: 600;
-      min-height: 1.5em;
-      color: #2563eb;
-      user-select: none;
-      text-align: center;
-      max-width: 520px;
-      word-wrap: break-word;
-    }
-    .seccion {
-      display: none;
-      opacity: 0;
-      transform: translateY(10px);
-      pointer-events: none;
-    }
-    .seccion.active {
-      display: block;
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
-    }
-    #adminPanel {
-      width: 100%;
-      max-width: 560px;
-      display: none; /* OCULTO el panel al inicio */
-    }
-    #loginForm input, #formCrear input, #formCrear select, #formAviso textarea, #formAviso select, #formReporte input {
-      font-size: 1rem;
-    }
-  </style>
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-    // ADVERTENCIA: Esta clave pública está en frontend, ideal usar backend para seguridad
-    const supabase = createClient(
-      'https://mubtfuksnxtbjxrrwzqh.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
-    );
-
-    window.addEventListener('DOMContentLoaded', () => {
-      const loginForm = document.getElementById('loginForm');
-      const loginTitle = document.getElementById('loginTitle');
-      const adminPanel = document.getElementById('adminPanel');
-      const mensaje = document.getElementById('mensaje');
-      const cerrarSesion = document.getElementById('cerrarSesion');
-      const bienvenida = document.getElementById('bienvenida');
-
-      const secciones = {
-        crear: document.getElementById('seccionCrear'),
-        verUsuarios: document.getElementById('seccionUsuarios'),
-        checadas: document.getElementById('seccionChecadas'),
-        aviso: document.getElementById('seccionAviso'),
-        reporte: document.getElementById('seccionReporte')
-      };
-
-      function setMensaje(text, isError = false) {
-        mensaje.textContent = text;
-        mensaje.style.color = isError ? '#dc2626' : '#2563eb';
-      }
-
-      loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        setMensaje('Validando credenciales...');
-
-        const nombre = document.getElementById('nombre').value.trim();
-        const nip = document.getElementById('nip').value.trim();
-
-        if (!nombre || !nip) {
-          setMensaje('❌ Por favor, completa todos los campos.', true);
-          return;
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Checador Jeeapcel - Panel</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #eef3f8;
+            padding: 40px;
+            text-align: center;
         }
 
-        try {
-          const { data, error } = await supabase
-            .from('usuarios')
-            .select('*')
-            .eq('nombre', nombre)
-            .eq('nip', nip)
-            .eq('activo', true)
-            .single();
+        h2, h3, h4 {
+            color: #222;
+        }
 
-          if (error || !data) {
-            setMensaje('❌ Usuario o NIP incorrecto', true);
-            return;
-          }
+        form, .panel, .seccion {
+            background: white;
+            display: inline-block;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: left;
+            max-width: 500px;
+        }
 
-          setMensaje(`✅ Bienvenido, ${data.nombre} | Rol: ${data.rol}`);
-          loginForm.style.display = 'none';
-          loginTitle.textContent = '';
-          cerrarSesion.style.display = 'inline-block';
-          bienvenida.textContent = `Bienvenido, ${data.nombre}`;
+        input, select, textarea {
+            padding: 8px;
+            margin-top: 5px;
+            width: 100%;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            font-size: 1em;
+        }
 
-          if (data.rol === 'admin') {
-            adminPanel.style.display = 'block';
-          } else {
+        button {
+            padding: 10px 20px;
+            background: #0077cc;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 5px;
+        }
+
+        button:hover {
+            background: #005fa3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        table, th, td {
+            border: 1px solid #ccc;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        #mensaje {
+            margin-top: 20px;
+            font-size: 1.1em;
+        }
+
+        .seccion {
+            display: none;
+        }
+    </style>
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@latest/+esm';
+
+        const supabase = createClient(
+            'https://mubtfuksnxtbjxrrwzqh.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11YnRmdWtzbnh0Ymp4cnJ3enFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2Njc0OTcsImV4cCI6MjA2NDI0MzQ5N30.B7ZyBG2g4hCfdI2A2aX852icnHb_JPpfc0VyO0Zr4PA'
+        );
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const loginForm = document.getElementById('loginForm');
+            const loginTitle = document.getElementById('loginTitle');
+            const adminPanel = document.getElementById('adminPanel');
+            const mensaje = document.getElementById('mensaje');
+            const cerrarSesion = document.getElementById('cerrarSesion');
+            const bienvenida = document.getElementById('bienvenida');
+
+            const secciones = {
+                crear: document.getElementById('seccionCrear'),
+                verUsuarios: document.getElementById('seccionUsuarios'),
+                checadas: document.getElementById('seccionChecadas'),
+                aviso: document.getElementById('seccionAviso'),
+                reporte: document.getElementById('seccionReporte')
+            };
+
             adminPanel.style.display = 'none';
-          }
+            cerrarSesion.style.display = 'none';
 
-          // Guardar usuario actual (podrías usar sessionStorage si quieres mantener sesión)
-          window.usuarioActual = data;
-        } catch(err) {
-          setMensaje('❌ Error al conectar con el servidor', true);
-          console.error(err);
-        }
-      });
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const nombre = document.getElementById('nombre').value.trim();
+                const nip = document.getElementById('nip').value.trim();
 
-      cerrarSesion.addEventListener('click', () => {
-        // Reinicia la página para cerrar sesión
-        location.reload();
-      });
+                const { data, error } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .eq('nombre', nombre)
+                    .eq('nip', nip)
+                    .eq('activo', true)
+                    .single();
 
-      // Crear usuario
-      document.getElementById('formCrear').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        setMensaje('Creando usuario...');
-        const nombre = document.getElementById('nuevoNombre').value.trim();
-        const nip = document.getElementById('nuevoNip').value.trim();
-        const rol = document.getElementById('nuevoRol').value;
+                if (error || !data) {
+                    mensaje.textContent = '❌ Usuario o NIP incorrecto';
+                } else {
+                    mensaje.textContent = `✅ Bienvenido, ${data.nombre} | Rol: ${data.rol}`;
+                    loginForm.style.display = 'none';
+                    loginTitle.textContent = '';
+                    cerrarSesion.style.display = 'inline-block';
+                    bienvenida.textContent = `Bienvenido, ${data.nombre}`;
 
-        if (!nombre || !nip || !rol) {
-          setMensaje('❌ Todos los campos son obligatorios.', true);
-          return;
-        }
-        try {
-          const { error } = await supabase.from('usuarios').insert([{ nombre, nip, rol, activo: true }]);
+                    if (data.rol === 'admin') {
+                        adminPanel.style.display = 'block';
+                    }
+                }
+            });
 
-          if (error) {
-            setMensaje('❌ Error al crear usuario: ' + error.message, true);
-          } else {
-            setMensaje(`✅ Usuario "${nombre}" creado correctamente`);
-            e.target.reset();
-            cargarUsuarios();
-          }
-        } catch(err) {
-          setMensaje('❌ Error al conectar con el servidor', true);
-          console.error(err);
-        }
-      });
+            cerrarSesion.addEventListener('click', () => {
+                location.reload();
+            });
 
-      async function cargarUsuarios() {
-        setMensaje('Cargando usuarios...');
-        try {
-          const { data, error } = await supabase.from('usuarios').select('*').eq('activo', true);
-          if (error) {
-            setMensaje('❌ Error al cargar usuarios: ' + error.message, true);
-            return;
-          }
-          const tabla = document.getElementById('tablaUsuarios');
-          tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Última entrada</th><th>Desactivar</th></tr>';
-          data.forEach(user => {
-            const fila = document.createElement('tr');
-            fila.innerHTML = \`
-              <td>\${user.nombre}</td>
-              <td>\${user.rol}</td>
-              <td>\${user.ultima_entrada ? new Date(user.ultima_entrada).toLocaleString() : '-'}</td>
-              <td><button aria-label="Desactivar usuario \${user.nombre}" onclick="desactivarUsuario(\${user.id})">❌</button></td>
-            \`;
-            tabla.appendChild(fila);
-          });
-          setMensaje('');
-        } catch(err) {
-          setMensaje('❌ Error al conectar con el servidor', true);
-          console.error(err);
-        }
-      }
+            document.getElementById('formCrear').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const nombre = document.getElementById('nuevoNombre').value.trim();
+                const nip = document.getElementById('nuevoNip').value.trim();
+                const rol = document.getElementById('nuevoRol').value;
 
-      window.desactivarUsuario = async (id) => {
-        if (!confirm('¿Estás seguro de desactivar este usuario?')) return;
-        setMensaje('Desactivando usuario...');
-        try {
-          const { error } = await supabase.from('usuarios').update({ activo: false }).eq('id', id);
-          if (error) {
-            setMensaje('❌ Error al desactivar usuario: ' + error.message, true);
-          } else {
-            setMensaje('⚠️ Usuario desactivado');
-            cargarUsuarios();
-          }
-        } catch(err) {
-          setMensaje('❌ Error al conectar con el servidor', true);
-          console.error(err);
-        }
-      };
+                const { error } = await supabase.from('usuarios').insert([{ nombre, nip, rol, activo: true }]);
 
-      document.getElementById('formFecha').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        setMensaje('Buscando checadas...');
-        const fecha = document.getElementById('fechaBuscada').value;
-        if (!fecha) {
-          setMensaje('❌ Selecciona una fecha válida.', true);
-          return;
-        }
-        try {
-          const { data, error } = await supabase
-            .from('usuarios')
-            .select('*')
-            .gte('ultima_entrada', fecha + 'T00:00:00')
-            .lte('ultima_entrada', fecha + 'T23:59:59');
+                if (error) {
+                    mensaje.textContent = '❌ Error al crear usuario';
+                } else {
+                    mensaje.textContent = `✅ Usuario ${nombre} creado correctamente`;
+                    document.getElementById('formCrear').reset();
+                    cargarUsuarios();
+                }
+            });
 
-          if (error) {
-            setMensaje('❌ Error al buscar checadas: ' + error.message, true);
-            return;
-          }
-          const tabla = document.getElementById('tablaChecadas');
-          tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Hora de entrada</th></tr>';
-          data.forEach(user => {
-            const fila = document.createElement('tr');
-            fila.innerHTML = \`<td>\${user.nombre}</td><td>\${user.rol}</td><td>\${new Date(user.ultima_entrada).toLocaleTimeString()}</td>\`;
-            tabla.appendChild(fila);
-          });
-          setMensaje('');
-        } catch(err) {
-          setMensaje('❌ Error al conectar con el servidor', true);
-          console.error(err);
-        }
-      });
+            async function cargarUsuarios() {
+                const { data } = await supabase.from('usuarios').select('*').eq('activo', true);
+                const tabla = document.getElementById('tablaUsuarios');
+                tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Última entrada</th><th>Desactivar</th></tr>';
+                data.forEach(user => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `
+                        <td>${user.nombre}</td>
+                        <td>${user.rol}</td>
+                        <td>${user.ultima_entrada ? new Date(user.ultima_entrada).toLocaleString() : '-'}</td>
+                        <td><button onclick="desactivarUsuario(${user.id})">❌</button></td>
+                    `;
+                    tabla.appendChild(fila);
+                });
+            }
 
-      document.getElementById('formAviso').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const texto = document.getElementById('avisoTexto').value.trim();
-        const rol = document.getElementById('rolDestino').value;
-        const sucursal = document.getElementById('sucursales').value;
-        if (!texto) {
-          setMensaje('❌ Ingresa el texto del aviso.', true);
-          return;
-        }
-        // Aquí se podría agregar lógica para guardar el aviso en la base de datos
-        setMensaje(\`📣 Aviso enviado a "\${rol}" en "\${sucursal}"\`);
-        e.target.reset();
-      });
+            window.desactivarUsuario = async (id) => {
+                await supabase.from('usuarios').update({ activo: false }).eq('id', id);
+                mensaje.textContent = '⚠️ Usuario desactivado';
+                cargarUsuarios();
+            };
 
-      document.getElementById('formReporte').addEventListener('submit', (e) => {
-        e.preventDefault();
-        const link = document.getElementById('nuevoLink').value.trim();
-        if (!link) {
-          setMensaje('❌ Ingresa un link válido.', true);
-          return;
-        }
-        try {
-          localStorage.setItem('linkReporte', link);
-          setMensaje('🔗 Link actualizado correctamente');
-          e.target.reset();
-        } catch(err) {
-          setMensaje('❌ Error al guardar el link.', true);
-          console.error(err);
-        }
-      });
+            document.getElementById('formFecha').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fecha = document.getElementById('fechaBuscada').value;
+                const { data } = await supabase
+                    .from('usuarios')
+                    .select('*')
+                    .gte('ultima_entrada', fecha + 'T00:00:00')
+                    .lte('ultima_entrada', fecha + 'T23:59:59');
 
-      window.mostrarSeccion = (id) => {
-        for (const key in secciones) {
-          secciones[key].classList.remove('active');
-        }
-        secciones[id].classList.add('active');
-        if (id === 'verUsuarios') cargarUsuarios();
-        setMensaje('');
-      };
-    });
-  </script>
+                const tabla = document.getElementById('tablaChecadas');
+                tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Hora de entrada</th></tr>';
+                data.forEach(user => {
+                    const fila = document.createElement('tr');
+                    fila.innerHTML = `<td>${user.nombre}</td><td>${user.rol}</td><td>${new Date(user.ultima_entrada).toLocaleTimeString()}</td>`;
+                    tabla.appendChild(fila);
+                });
+            });
+
+            document.getElementById('formAviso').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const texto = document.getElementById('avisoTexto').value;
+                const rol = document.getElementById('rolDestino').value;
+                const sucursal = document.getElementById('sucursales').value;
+                console.log('Aviso creado para', rol, 'en', sucursal, ':', texto);
+                mensaje.textContent = `📣 Aviso enviado a ${rol} en ${sucursal}`;
+                e.target.reset();
+            });
+
+            document.getElementById('formReporte').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const link = document.getElementById('nuevoLink').value;
+                localStorage.setItem('linkReporte', link);
+                mensaje.textContent = '🔗 Link actualizado correctamente';
+            });
+
+            window.mostrarSeccion = (id) => {
+                for (const key in secciones) {
+                    secciones[key].style.display = 'none';
+                }
+                secciones[id].style.display = 'block';
+                if (id === 'verUsuarios') cargarUsuarios();
+            };
+        });
+    </script>
 </head>
 <body>
-  <h2 id="loginTitle" tabindex="0">🔐 Iniciar sesión en Jeeapcel</h2>
-  <h3 id="bienvenida" tabindex="0"></h3>
-  <form id="loginForm" aria-label="Formulario de inicio de sesión">
-    <input type="text" id="nombre" placeholder="Nombre" required aria-required="true" aria-label="Nombre de usuario" autocomplete="username" /><br>
-    <input type="password" id="nip" placeholder="NIP" required aria-required="true" aria-label="NIP" autocomplete="current-password" /><br>
-    <button type="submit" aria-label="Entrar">Entrar</button>
-  </form>
+    <h2 id="loginTitle">🔐 Iniciar sesión en Jeeapcel</h2>
+    <h3 id="bienvenida"></h3>
+    <form id="loginForm">
+        <input type="text" id="nombre" placeholder="Nombre" required><br>
+        <input type="password" id="nip" placeholder="NIP" required><br>
+        <button type="submit">Entrar</button>
+    </form>
 
-  <div class="panel" id="adminPanel" aria-live="polite" aria-label="Panel de administrador" style="display:none;">
-    <h3 tabindex="0">🛠️ Panel de administrador</h3>
-    <div role="toolbar" aria-label="Opciones del panel de administrador" style="margin-bottom: 15px;">
-      <button onclick="mostrarSeccion('crear')" aria-controls="seccionCrear" aria-expanded="false">➕ Crear Usuario</button>
-      <button onclick="mostrarSeccion('verUsuarios')" aria-controls="seccionUsuarios" aria-expanded="false">👁️ Ver Usuarios Activos</button>
-      <button onclick="mostrarSeccion('checadas')" aria-controls="seccionChecadas" aria-expanded="false">📅 Ver Checadas por Fecha</button>
-      <button onclick="mostrarSeccion('aviso')" aria-controls="seccionAviso" aria-expanded="false">📣 Crear Aviso</button>
-      <button onclick="mostrarSeccion('reporte')" aria-controls="seccionReporte" aria-expanded="false">🔗 Actualizar Link Reportes</button>
-      <button id="cerrarSesion" aria-label="Cerrar sesión">🔓 Cerrar sesión</button>
+    <div class="panel" id="adminPanel">
+        <h3>🛠️ Panel de administrador</h3>
+        <button onclick="mostrarSeccion('crear')">➕ Crear Usuario</button>
+        <button onclick="mostrarSeccion('verUsuarios')">👁️ Ver Usuarios Activos</button>
+        <button onclick="mostrarSeccion('checadas')">📅 Ver Checadas por Fecha</button>
+        <button onclick="mostrarSeccion('aviso')">📣 Crear Aviso</button>
+        <button onclick="mostrarSeccion('reporte')">🔗 Actualizar Link Reportes</button>
+        <button id="cerrarSesion">🔓 Cerrar sesión</button>
+
+        <div id="seccionCrear" class="seccion">
+            <h4>➕ Crear Usuario</h4>
+            <form id="formCrear">
+                <input type="text" id="nuevoNombre" placeholder="Nombre" required><br>
+                <input type="password" id="nuevoNip" placeholder="NIP" required><br>
+                <select id="nuevoRol" required>
+                    <option value="">Selecciona un rol</option>
+                    <option value="admin">admin</option>
+                    <option value="supervisor">supervisor</option>
+                    <option value="empleado">empleado</option>
+                </select><br>
+                <button type="submit">Crear</button>
+            </form>
+        </div>
+
+        <div id="seccionUsuarios" class="seccion">
+            <h4>👁️ Usuarios activos</h4>
+            <table id="tablaUsuarios"></table>
+        </div>
+
+        <div id="seccionChecadas" class="seccion">
+            <h4>📅 Checadas por fecha</h4>
+            <form id="formFecha">
+                <input type="date" id="fechaBuscada" required>
+                <button type="submit">Buscar</button>
+            </form>
+            <table id="tablaChecadas"></table>
+        </div>
+
+        <div id="seccionAviso" class="seccion">
+            <h4>📣 Crear Aviso</h4>
+            <form id="formAviso">
+                <textarea id="avisoTexto" placeholder="Escribe el aviso..." required></textarea><br>
+                <select id="rolDestino">
+                    <option value="todos">Todos los roles</option>
+                    <option value="admin">Solo admins</option>
+                    <option value="supervisor">Supervisores</option>
+                    <option value="empleado">Empleados</option>
+                </select>
+                <select id="sucursales">
+                    <option value="todas">Todas las sucursales</option>
+                    <option value="A">Sucursal A</option>
+                    <option value="B">Sucursal B</option>
+                    <option value="C">Sucursal C</option>
+                    <option value="D">Sucursal D</option>
+                    <option value="E">Sucursal E</option>
+                    <option value="F">Sucursal F</option>
+                </select>
+                <button type="submit">Enviar aviso</button>
+            </form>
+        </div>
+
+        <div id="seccionReporte" class="seccion">
+            <h4>🔗 Actualizar link de reportes</h4>
+            <form id="formReporte">
+                <input type="url" id="nuevoLink" placeholder="Pega aquí el nuevo link del reporte" required>
+                <button type="submit">Actualizar</button>
+            </form>
+        </div>
     </div>
 
-    <div id="seccionCrear" class="seccion" tabindex="-1">
-      <h4>➕ Crear Usuario</h4>
-      <form id="formCrear" aria-label="Formulario para crear usuario">
-        <input type="text" id="nuevoNombre" placeholder="Nombre" required aria-required="true" autocomplete="off"/>
-        <input type="password" id="nuevoNip" placeholder="NIP" required aria-required="true" autocomplete="new-password"/>
-        <select id="nuevoRol" required aria-required="true" aria-label="Selecciona un rol">
-          <option value="" disabled selected>Selecciona un rol</option>
-          <option value="admin">admin</option>
-          <option value="supervisor">supervisor</option>
-          <option value="empleado">empleado</option>
-        </select>
-        <button type="submit">Crear</button>
-      </form>
-    </div>
-
-    <div id="seccionUsuarios" class="seccion" tabindex="-1">
-      <h4>👁️ Usuarios activos</h4>
-      <table id="tablaUsuarios" role="grid" aria-live="polite"></table>
-    </div>
-
-    <div id="seccionChecadas" class="seccion" tabindex="-1">
-      <h4>📅 Checadas por fecha</h4>
-      <form id="formFecha" aria-label="Formulario para buscar checadas por fecha">
-        <input type="date" id="fechaBuscada" required aria-required="true" aria-label="Selecciona la fecha" />
-        <button type="submit">Buscar</button>
-      </form>
-      <table id="tablaChecadas" role="grid" aria-live="polite"></table>
-    </div>
-
-    <div id="seccionAviso" class="seccion" tabindex="-1">
-      <h4>📣 Crear Aviso</h4>
-      <form id="formAviso" aria-label="Formulario para crear aviso">
-        <textarea id="avisoTexto" placeholder="Escribe el aviso..." required aria-required="true" rows="4"></textarea>
-        <select id="rolDestino" aria-label="Selecciona el rol destinatario">
-          <option value="todos">Todos los roles</option>
-          <option value="admin">Solo admins</option>
-          <option value="supervisor">Supervisores</option>
-          <option value="empleado">Empleados</option>
-        </select>
-        <select id="sucursales" aria-label="Selecciona la sucursal destinataria">
-          <option value="todas">Todas las sucursales</option>
-          <option value="A">Sucursal A</option>
-          <option value="B">Sucursal B</option>
-          <option value="C">Sucursal C</option>
-          <option value="D">Sucursal D</option>
-          <option value="E">Sucursal E</option>
-          <option value="F">Sucursal F</option>
-        </select>
-        <button type="submit">Enviar aviso</button>
-      </form>
-    </div>
-
-    <div id="seccionReporte" class="seccion" tabindex="-1">
-      <h4>🔗 Actualizar link de reportes</h4>
-      <form id="formReporte" aria-label="Formulario para actualizar link de reportes">
-        <input type="url" id="nuevoLink" placeholder="Pega aquí el nuevo link del reporte" required aria-required="true"/>
-        <button type="submit">Actualizar</button>
-      </form>
-    </div>
-  </div>
-
-  <div id="mensaje" role="alert" aria-live="assertive" tabindex="0"></div>
+    <div id="mensaje"></div>
 </body>
 </html>
-
