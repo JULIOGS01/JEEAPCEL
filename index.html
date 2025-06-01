@@ -39,7 +39,6 @@
 
         button {
             padding: 10px 20px;
-            background: #0077cc;
             color: white;
             border: none;
             border-radius: 8px;
@@ -49,7 +48,15 @@
         }
 
         button:hover {
-            background: #005fa3;
+            opacity: 0.9;
+        }
+
+        .btn-checkin {
+            background: #28a745; /* Verde */
+        }
+
+        .btn-checkout {
+            background: #dc3545; /* Rojo */
         }
 
         table {
@@ -90,7 +97,8 @@
             const adminPanel = document.getElementById('adminPanel');
             const empleadoPanel = document.getElementById('empleadoPanel');
             const mensaje = document.getElementById('mensaje');
-            const cerrarSesion = document.getElementById('cerrarSesion');
+            const cerrarSesionAdmin = document.getElementById('cerrarSesionAdmin');
+            const cerrarSesionEmpleado = document.getElementById('cerrarSesionEmpleado');
             const bienvenida = document.getElementById('bienvenida');
 
             const secciones = {
@@ -99,12 +107,14 @@
                 checadas: document.getElementById('seccionChecadas'),
                 aviso: document.getElementById('seccionAviso'),
                 reporte: document.getElementById('seccionReporte'),
-                avisosEmpleado: document.getElementById('seccionAvisosEmpleado')
+                avisosEmpleado: document.getElementById('seccionAvisosEmpleado'),
+                checadasEmpleado: document.getElementById('seccionChecadasEmpleado')
             };
 
             adminPanel.style.display = 'none';
             empleadoPanel.style.display = 'none';
-            cerrarSesion.style.display = 'none';
+            cerrarSesionAdmin.style.display = 'none';
+            cerrarSesionEmpleado.style.display = 'none';
 
             loginForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
@@ -125,7 +135,8 @@
                     mensaje.textContent = `✅ Bienvenido, ${data.nombre} | Rol: ${data.rol}`;
                     loginForm.style.display = 'none';
                     loginTitle.textContent = '';
-                    cerrarSesion.style.display = 'inline-block';
+                    cerrarSesionAdmin.style.display = 'inline-block';
+                    cerrarSesionEmpleado.style.display = 'inline-block';
                     bienvenida.textContent = `Bienvenido, ${data.nombre}`;
 
                     if (data.rol === 'admin') {
@@ -143,7 +154,11 @@
                 }
             });
 
-            cerrarSesion.addEventListener('click', () => {
+            cerrarSesionAdmin.addEventListener('click', () => {
+                location.reload();
+            });
+
+            cerrarSesionEmpleado.addEventListener('click', () => {
                 location.reload();
             });
 
@@ -189,17 +204,19 @@
             document.getElementById('formFecha').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const fecha = document.getElementById('fechaBuscada').value;
+                const sucursal = document.getElementById('sucursalFiltro').value;
                 const { data } = await supabase
-                    .from('usuarios')
+                    .from('checadas')
                     .select('*')
-                    .gte('ultima_entrada', fecha + 'T00:00:00')
-                    .lte('ultima_entrada', fecha + 'T23:59:59');
+                    .gte('fecha', fecha + 'T00:00:00')
+                    .lte('fecha', fecha + 'T23:59:59')
+                    .eq('sucursal', sucursal);
 
                 const tabla = document.getElementById('tablaChecadas');
-                tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Hora de entrada</th></tr>';
+                tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Hora de entrada</th><th>Hora de salida</th></tr>';
                 data.forEach(user => {
                     const fila = document.createElement('tr');
-                    fila.innerHTML = `<td>${user.nombre}</td><td>${user.rol}</td><td>${new Date(user.ultima_entrada).toLocaleTimeString()}</td>`;
+                    fila.innerHTML = `<td>${user.nombre}</td><td>${user.rol}</td><td>${new Date(user.hora_entrada).toLocaleTimeString()}</td><td>${user.hora_salida ? new Date(user.hora_salida).toLocaleTimeString() : '-'}</td>`;
                     tabla.appendChild(fila);
                 });
             });
@@ -232,6 +249,28 @@
                 });
             }
 
+            document.getElementById('btnCheckIn').addEventListener('click', async () => {
+                const nombre = document.getElementById('nombre').value.trim();
+                const sucursal = document.getElementById('sucursalEmpleado').textContent.split(': ')[1];
+                const { error } = await supabase.from('checadas').insert([{ nombre, sucursal, hora_entrada: new Date() }]);
+                if (error) {
+                    mensaje.textContent = '❌ Error al registrar Check In';
+                } else {
+                    mensaje.textContent = '✅ Check In registrado correctamente';
+                }
+            });
+
+            document.getElementById('btnCheckOut').addEventListener('click', async () => {
+                const nombre = document.getElementById('nombre').value.trim();
+                const sucursal = document.getElementById('sucursalEmpleado').textContent.split(': ')[1];
+                const { error } = await supabase.from('checadas').update({ hora_salida: new Date() }).eq('nombre', nombre).eq('sucursal', sucursal).is('hora_salida', null);
+                if (error) {
+                    mensaje.textContent = '❌ Error al registrar Check Out';
+                } else {
+                    mensaje.textContent = '✅ Check Out registrado correctamente';
+                }
+            });
+
             window.mostrarSeccion = (id) => {
                 for (const key in secciones) {
                     secciones[key].style.display = 'none';
@@ -258,7 +297,7 @@
         <button onclick="mostrarSeccion('checadas')">📅 Ver Checadas por Fecha</button>
         <button onclick="mostrarSeccion('aviso')">📣 Crear Aviso</button>
         <button onclick="mostrarSeccion('reporte')">🔗 Actualizar Link Reportes</button>
-        <button id="cerrarSesion">🔓 Cerrar sesión</button>
+        <button id="cerrarSesionAdmin">🔓 Cerrar sesión</button>
 
         <div id="seccionCrear" class="seccion">
             <h4>➕ Crear Usuario</h4>
@@ -284,6 +323,14 @@
             <h4>📅 Checadas por fecha</h4>
             <form id="formFecha">
                 <input type="date" id="fechaBuscada" required>
+                <select id="sucursalFiltro" required>
+                    <option value="A">Sucursal A</option>
+                    <option value="B">Sucursal B</option>
+                    <option value="C">Sucursal C</option>
+                    <option value="D">Sucursal D</option>
+                    <option value="E">Sucursal E</option>
+                    <option value="F">Sucursal F</option>
+                </select>
                 <button type="submit">Buscar</button>
             </form>
             <table id="tablaChecadas"></table>
@@ -324,9 +371,11 @@
     <div class="panel" id="empleadoPanel">
         <h3>👨‍💼 Panel de Empleado</h3>
         <h4 id="sucursalEmpleado"></h4>
+        <button id="btnCheckIn" class="btn-checkin">✅ Check In</button>
+        <button id="btnCheckOut" class="btn-checkout">❌ Check Out</button>
         <button onclick="mostrarSeccion('avisosEmpleado')">📣 Ver Avisos</button>
         <button onclick="window.open(localStorage.getItem('linkReporte'), '_blank')">🔗 Link Reportes</button>
-        <button id="cerrarSesion">🔓 Cerrar sesión</button>
+        <button id="cerrarSesionEmpleado">🔓 Cerrar sesión</button>
 
         <div id="seccionAvisosEmpleado" class="seccion">
             <h4>📣 Avisos</h4>
