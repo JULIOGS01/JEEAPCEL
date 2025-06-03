@@ -486,6 +486,64 @@
                 margin-left: 0 !important;
             }
         }
+        @media (max-width: 900px) {
+            .slidebar {
+                display: none !important;
+            }
+            #main-content {
+                margin-left: 0 !important;
+            }
+            .sidebar-toggle-btn {
+                display: flex !important;
+            }
+        }
+        .sidebar-toggle-btn {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            z-index: 200;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(31,38,135,0.18);
+            cursor: pointer;
+            font-size: 1.7em;
+            transition: background 0.18s, transform 0.12s;
+        }
+        .sidebar-toggle-btn:active {
+            transform: scale(0.93);
+        }
+        .slidebar.sidebar-mobile {
+            display: flex !important;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 220px;
+            height: 100vh;
+            z-index: 300;
+            background: linear-gradient(180deg, #4f8cff 0%, #2563eb 100%);
+            animation: sidebarIn 0.18s;
+        }
+        @keyframes sidebarIn {
+            from { transform: translateX(-240px); opacity: 0.5; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.18);
+            z-index: 250;
+        }
+        .sidebar-overlay.active {
+            display: block;
+        }
     </style>
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@latest/+esm';
@@ -540,7 +598,7 @@
             const { data } = await supabase.from('usuarios').select('*').eq('activo', true);
             const tabla = document.getElementById('tablaUsuarios');
             tabla.innerHTML = '<tr><th>Nombre</th><th>Rol</th><th>Última entrada</th><th>Desactivar</th></tr>';
-            data.forEach(user => {
+            data.forEach  (user => {
                 const fila = document.createElement('tr');
                 fila.innerHTML = `
                     <td>${user.nombre}</td>
@@ -702,6 +760,40 @@
                 link.click();
             });
         }
+
+        // --- Sidebar móvil ---
+        const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const sidebarAdmin = document.getElementById('sidebarAdmin');
+        const sidebarEmpleado = document.getElementById('sidebarEmpleado');
+
+        function closeSidebarMobile() {
+            sidebarAdmin.classList.remove('sidebar-mobile');
+            sidebarEmpleado.classList.remove('sidebar-mobile');
+            sidebarOverlay.classList.remove('active');
+        }
+
+        sidebarToggleBtn.addEventListener('click', () => {
+            if (sidebarAdmin.style.display === 'flex') {
+                sidebarAdmin.classList.add('sidebar-mobile');
+            }
+            if (sidebarEmpleado.style.display === 'flex') {
+                sidebarEmpleado.classList.add('sidebar-mobile');
+            }
+            sidebarOverlay.classList.add('active');
+        });
+
+        sidebarOverlay.addEventListener('click', closeSidebarMobile);
+
+        document.querySelectorAll('.slidebar .sidebar-btns button, .slidebar .sidebar-footer button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.innerWidth <= 900) closeSidebarMobile();
+            });
+        });
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 900) closeSidebarMobile();
+        });
 
         // --- DOMContentLoaded: Asignación de eventos y lógica principal ---
         window.addEventListener('DOMContentLoaded', async () => {
@@ -892,6 +984,12 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
+    <!-- Botón hamburguesa para móvil -->
+    <button class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Abrir menú">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
     <!-- Sidebar Admin -->
     <div class="slidebar" id="sidebarAdmin" style="display:none;">
         <div class="logo">
