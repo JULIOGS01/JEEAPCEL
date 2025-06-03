@@ -434,6 +434,73 @@
                 padding: 22px 6vw 18px 6vw;
             }
         }
+        @media (max-width: 700px) {
+            html, body {
+                max-width: 100vw;
+                overflow-x: hidden;
+                /* Escala todo al 90% en móviles */
+                zoom: 0.9;
+            }
+            #main-content, .panel, .seccion {
+                max-width: 100vw !important;
+                width: 100vw !important;
+                box-sizing: border-box;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+                overflow-x: hidden;
+            }
+            .panel {
+                padding: 10px 2vw 10px 2vw !important;
+                margin: 10px auto 0 auto !important;
+            }
+            .seccion {
+                padding: 10px 2vw 10px 2vw !important;
+                margin: 10px 0 !important;
+            }
+            #formCrear input,
+            #formCrear select,
+            #formAviso textarea,
+            #formAviso select,
+            #formFecha input[type="date"] {
+                max-width: 98vw !important;
+                min-width: 0 !important;
+                width: 98vw !important;
+                box-sizing: border-box;
+            }
+            #formFecha {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            #formFecha button {
+                width: 100% !important;
+                min-width: 0 !important;
+                margin: 6px 0 !important;
+            }
+            table {
+                max-width: 98vw !important;
+                font-size: 0.97em !important;
+                overflow-x: auto !important;
+                display: block !important;
+            }
+            th, td {
+                white-space: nowrap !important;
+            }
+            /* Ajusta el sidebar para que no cause scroll horizontal */
+            .slidebar {
+                max-width: 90vw !important;
+                width: 90vw !important;
+                min-width: 0 !important;
+            }
+            /* Ajusta el login para móviles */
+            #loginForm {
+                max-width: 98vw !important;
+                min-width: 0 !important;
+                padding: 16px 2vw 12px 2vw !important;
+                box-sizing: border-box;
+            }
+        }
         /* ====== PANEL EMPLEADO ====== */
         #empleadoPanel .main-btns {
             display: flex;
@@ -809,6 +876,13 @@
         max-width: 90vw !important;
         width: 90vw !important;
         min-width: 0 !important;
+    }
+    /* Ajusta el login para móviles */
+    #loginForm {
+        max-width: 98vw !important;
+        min-width: 0 !important;
+        padding: 16px 2vw 12px 2vw !important;
+        box-sizing: border-box;
     }
 }
 
