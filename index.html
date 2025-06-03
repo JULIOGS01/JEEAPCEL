@@ -445,14 +445,28 @@
         let linkInventarioGlobal = '';
 
         async function cargarLinksGlobales() {
-            // Suponiendo que tienes una tabla 'config' con campos 'clave' y 'valor'
+            // Consulta y loguea el resultado para depuración
             const { data, error } = await supabase.from('config').select('*').in('clave', ['linkReporte', 'linkInventario']);
-            if (data) {
-                data.forEach(row => {
-                    if (row.clave === 'linkReporte') linkReporteGlobal = row.valor;
-                    if (row.clave === 'linkInventario') linkInventarioGlobal = row.valor;
-                });
+            console.log('Supabase config data:', data, 'error:', error);
+            if (error) {
+                // Muestra el error en consola y en la app
+                document.getElementById('mensaje').textContent = '❌ Error al consultar links: ' + error.message;
+                return;
             }
+            if (!data || data.length === 0) {
+                document.getElementById('mensaje').textContent = '❌ No hay configuración de links en la base de datos.';
+                return;
+            }
+            // Normaliza claves y asigna
+            data.forEach(row => {
+                // Asegura que los campos sean correctos
+                const clave = row.clave || row.key || row.KEY;
+                const valor = row.valor || row.value || row.VALOR;
+                if (clave === 'linkReporte') linkReporteGlobal = valor;
+                if (clave === 'linkInventario') linkInventarioGlobal = valor;
+            });
+            // Log para depuración
+            console.log('linkReporteGlobal:', linkReporteGlobal, 'linkInventarioGlobal:', linkInventarioGlobal);
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
