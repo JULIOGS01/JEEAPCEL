@@ -440,34 +440,9 @@
         let usuarioActual = null;
         let sucursalActual = null;
 
-        // Variables globales para los links
-        let linkReporteGlobal = '';
-        let linkInventarioGlobal = '';
-
-        async function cargarLinksGlobales() {
-            // Consulta y loguea el resultado para depuración
-            const { data, error } = await supabase.from('config').select('*').in('clave', ['linkReporte', 'linkInventario']);
-            console.log('Supabase config data:', data, 'error:', error);
-            if (error) {
-                // Muestra el error en consola y en la app
-                document.getElementById('mensaje').textContent = '❌ Error al consultar links: ' + error.message;
-                return;
-            }
-            if (!data || data.length === 0) {
-                document.getElementById('mensaje').textContent = '❌ No hay configuración de links en la base de datos.';
-                return;
-            }
-            // Normaliza claves y asigna
-            data.forEach(row => {
-                // Asegura que los campos sean correctos
-                const clave = row.clave || row.key || row.KEY;
-                const valor = row.valor || row.value || row.VALOR;
-                if (clave === 'linkReporte') linkReporteGlobal = valor;
-                if (clave === 'linkInventario') linkInventarioGlobal = valor;
-            });
-            // Log para depuración
-            console.log('linkReporteGlobal:', linkReporteGlobal, 'linkInventarioGlobal:', linkInventarioGlobal);
-        }
+        // Variables globales para los links (ahora fijos)
+        let linkReporteGlobal = 'https://forms.gle/63Q3eGbGEckwrTBz7';
+        let linkInventarioGlobal = 'https://forms.gle/JWbeMAeBABXnkxXy9';
 
         window.addEventListener('DOMContentLoaded', async () => {
             // Oculta los paneles y botones de cerrar sesión al cargar la página
@@ -686,25 +661,7 @@
                 e.target.reset();
             });
 
-            document.getElementById('formReporte').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const link = document.getElementById('nuevoLink').value;
-                // Actualiza en Supabase
-                await supabase.from('config').upsert([{ clave: 'linkReporte', valor: link }], { onConflict: ['clave'] });
-                linkReporteGlobal = link;
-                mensaje.textContent = '🔗 Link actualizado correctamente';
-            });
-
             // NUEVO: FORMULARIO INVENTARIO
-            document.getElementById('formInventario').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const link = document.getElementById('nuevoLinkInventario').value;
-                // Actualiza en Supabase
-                await supabase.from('config').upsert([{ clave: 'linkInventario', valor: link }], { onConflict: ['clave'] });
-                linkInventarioGlobal = link;
-                mensaje.textContent = '📦 Link de inventario actualizado correctamente';
-            });
-
             async function cargarAvisos() {
                 const { data } = await supabase.from('avisos').select('*');
                 const tabla = document.getElementById('tablaAvisosEmpleado');
@@ -874,20 +831,12 @@
 
             if (btnReportes) {
                 btnReportes.addEventListener('click', () => {
-                    if (linkReporteGlobal) {
-                        window.open(linkReporteGlobal, '_blank');
-                    } else {
-                        alert('No hay link de reportes configurado.');
-                    }
+                    window.open(linkReporteGlobal, '_blank');
                 });
             }
             if (btnInventario) {
                 btnInventario.addEventListener('click', () => {
-                    if (linkInventarioGlobal) {
-                        window.open(linkInventarioGlobal, '_blank');
-                    } else {
-                        alert('No hay link de inventario configurado.');
-                    }
+                    window.open(linkInventarioGlobal, '_blank');
                 });
             }
         });
@@ -962,8 +911,6 @@
             <button onclick="mostrarSeccion('aviso')"><i class="fas fa-bullhorn"></i> Aviso</button>
         </div>
         <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:10px;">
-            <button onclick="mostrarSeccion('reporte')"><i class="fas fa-link"></i> Link Reportes</button>
-            <button onclick="mostrarSeccion('inventario')"><i class="fas fa-boxes"></i> Link Inventario</button>
             <button id="cerrarSesionAdmin" style="background:#ff4d4f;"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
         </div>
 
@@ -1021,22 +968,8 @@
             </form>
         </div>
 
-        <div id="seccionReporte" class="seccion">
-            <h4><i class="fas fa-link"></i> Actualizar link de reportes</h4>
-            <form id="formReporte">
-                <input type="url" id="nuevoLink" placeholder="Pega aquí el nuevo link del reporte" required>
-                <button type="submit"><i class="fas fa-save"></i> Actualizar</button>
-            </form>
-        </div>
-
-        <!-- NUEVA SECCIÓN PARA INVENTARIO -->
-        <div id="seccionInventario" class="seccion">
-            <h4><i class="fas fa-boxes"></i> Actualizar link de inventario</h4>
-            <form id="formInventario">
-                <input type="url" id="nuevoLinkInventario" placeholder="Pega aquí el nuevo link de inventario" required>
-                <button type="submit"><i class="fas fa-save"></i> Actualizar</button>
-            </form>
-        </div>
+        <div id="seccionReporte" class="seccion" style="display:none"></div>
+        <div id="seccionInventario" class="seccion" style="display:none"></div>
     </div>
 
     <div class="panel" id="empleadoPanel">
