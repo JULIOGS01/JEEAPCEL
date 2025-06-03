@@ -652,13 +652,19 @@
                 URL.revokeObjectURL(url);
             });
 
-            document.getElementById('formAviso').addEventListener('submit', (e) => {
+            document.getElementById('formAviso').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const texto = document.getElementById('avisoTexto').value;
                 const rol = document.getElementById('rolDestino').value;
                 const sucursal = document.getElementById('sucursales').value;
-                mensaje.textContent = `📣 Aviso enviado a ${rol} en ${sucursal}`;
-                e.target.reset();
+                // Guarda el aviso en Supabase
+                const { error } = await supabase.from('avisos').insert([{ texto, rol, sucursal }]);
+                if (error) {
+                    mensaje.textContent = '❌ Error al guardar el aviso';
+                } else {
+                    mensaje.textContent = `📣 Aviso enviado a ${rol} en ${sucursal}`;
+                    e.target.reset();
+                }
             });
 
             // NUEVO: FORMULARIO INVENTARIO
