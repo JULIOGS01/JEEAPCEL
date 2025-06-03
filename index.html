@@ -834,6 +834,31 @@
             // Imprimir etiqueta
             document.querySelector('.print-btn').addEventListener('click', printEtiqueta);
             document.getElementById('downloadBtn').addEventListener('click', downloadEtiqueta);
+
+            // Asignar eventos a los botones de Reportes e Inventarios del panel empleado
+            const btnReportes = document.getElementById('btnReportesEmpleado');
+            const btnInventario = document.getElementById('btnInventarioEmpleado');
+
+            if (btnReportes) {
+                btnReportes.addEventListener('click', () => {
+                    const link = localStorage.getItem('linkReporte');
+                    if (link) {
+                        window.open(link, '_blank');
+                    } else {
+                        alert('No hay link de reportes configurado.');
+                    }
+                });
+            }
+            if (btnInventario) {
+                btnInventario.addEventListener('click', () => {
+                    const link = localStorage.getItem('linkInventario');
+                    if (link) {
+                        window.open(link, '_blank');
+                    } else {
+                        alert('No hay link de inventario configurado.');
+                    }
+                });
+            }
         });
 
         function formatNumber(number) {
@@ -994,11 +1019,11 @@
         <!-- Botones en un solo renglón, íconos visibles -->
         <div class="main-btns">
             <button id="btnMostrarTabulador"><i class="fas fa-table"></i>Tabulador</button>
-            <button onclick="window.open(localStorage.getItem('linkReporte'), '_blank')"><i class="fas fa-link"></i>Reportes</button>
+            <button id="btnReportesEmpleado"><i class="fas fa-link"></i>Reportes</button>
             <button onclick="mostrarSeccion('avisosEmpleado')"><i class="fas fa-bullhorn"></i>Avisos</button>
             <button id="btnMostrarAmigoPaguitos"><i class="fas fa-user-friends"></i>Amigo Paguitos</button>
             <button id="btnMostrarTarifario"><i class="fas fa-file-alt"></i>Tarifario</button>
-            <button onclick="window.open(localStorage.getItem('linkInventario'), '_blank')"><i class="fas fa-boxes"></i>Inventarios</button>
+            <button id="btnInventarioEmpleado"><i class="fas fa-boxes"></i>Inventarios</button>
         </div>
         <div class="logout-btn">
             <button id="cerrarSesionEmpleado"><i class="fas fa-sign-out-alt"></i> Cerrar sesión</button>
