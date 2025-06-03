@@ -8,6 +8,7 @@
     <style>
         /* ====== RESET Y BASE ====== */
         body {
+            /* Fondo sólido muy claro */
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f4f6fa;
             min-height: 100vh;
@@ -16,6 +17,14 @@
             display: flex;
             flex-direction: row;
             align-items: flex-start;
+        }
+        /* Fondo de desenfoque detrás del login */
+        #login-bg-blur {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: 1;
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(2px);
         }
         #main-content {
             flex: 1;
@@ -26,6 +35,7 @@
             min-height: 100vh;       /* <-- Agrega esta línea */
             margin-left: 35px;
             width: 100%;
+            z-index: 2;
         }
         h2, h3, h4 {
             color: #1a2233;
@@ -72,39 +82,54 @@
             gap: 10px;
         }
         .slidebar .sidebar-btns button {
-            width: 90%;
+            width: 96%;
             margin: 0 auto;
-            background: #4f8cff;
-            color: #fff;
+            background: transparent;
+            color: #eaf0fb;
             border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: 500;
+            border-radius: 12px;
+            font-size: 1.18em;
+            font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 18px;
+            gap: 18px;
+            padding: 18px 24px;
             cursor: pointer;
-            transition: background 0.18s, color 0.18s, transform 0.12s;
-            box-shadow: 0 2px 8px rgba(31,38,135,0.08);
+            transition: color 0.22s, background 0.18s, transform 0.12s;
+            box-shadow: none;
+            justify-content: flex-start;
+            position: relative;
+            /* Efecto de integración visual */
         }
         .slidebar .sidebar-btns button i {
-            color: #fff !important;
-            font-size: 1.2em;
-            transition: color 0.18s;
+            color: #eaf0fb !important;
+            font-size: 1.35em;
+            transition: color 0.22s;
+            margin-right: 10px;
         }
         .slidebar .sidebar-btns button:hover,
         .slidebar .sidebar-btns button:focus {
-            background: #2563eb;
-            color: #fff;
+            background: rgba(255,255,255,0.06);
+            color: #fca308;
             transform: scale(1.06);
         }
         .slidebar .sidebar-btns button:hover i,
         .slidebar .sidebar-btns button:focus i {
-            color: #fff !important;
+            color: #fca308 !important;
         }
         .slidebar .sidebar-btns button:active {
             transform: scale(0.97);
+        }
+        .slidebar .sidebar-btns button span {
+            flex: 1;
+            text-align: left;
+            font-size: 1em;
+            letter-spacing: 0.5px;
+            transition: color 0.22s;
+        }
+        .slidebar .sidebar-btns button:hover span,
+        .slidebar .sidebar-btns button:focus span {
+            color: #fca308;
         }
         .slidebar .sidebar-footer {
             margin-top: auto;
@@ -258,42 +283,156 @@
         /* ====== LOGIN ====== */
         #loginForm {
             width: 100%;
-            max-width: 320px;
-            margin: 32px auto 0 auto;
+            max-width: 370px;
+            margin: 56px auto 0 auto;
             display: flex;
             flex-direction: column;
             align-items: center;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 2px 12px rgba(31,38,135,0.07);
-            padding: 28px 18px 18px 18px;
+            background: linear-gradient(135deg, #eaf0fb 80%, #dbeafe 100%);
+            border-radius: 22px;
+            border: 2.5px solid #4f8cff;
+            box-shadow: 0 8px 32px rgba(79,140,255,0.13), 0 2px 12px rgba(31,38,135,0.10);
+            padding: 48px 32px 38px 32px;
+            position: relative;
+            z-index: 2;
+            transition: box-shadow 0.2s, border 0.2s;
+            animation: loginFadeIn 0.7s cubic-bezier(.4,1.4,.6,1) 1;
+            /* Nuevo: borde interior sutil */
+            box-shadow:
+                0 8px 32px rgba(79,140,255,0.13),
+                0 2px 12px rgba(31,38,135,0.10),
+                0 0 0 6px #fff6 inset;
+        }
+        @keyframes loginFadeIn {
+            from { opacity: 0; transform: translateY(40px) scale(0.98);}
+            to   { opacity: 1; transform: translateY(0) scale(1);}
+        }
+        #loginForm:hover {
+            box-shadow:
+                0 16px 40px rgba(79,140,255,0.18),
+                0 4px 18px rgba(31,38,135,0.13),
+                0 0 0 8px #eaf0fb inset;
+            border-color: #2563eb;
+        }
+        #loginForm .login-icon {
+            font-size: 3.2em;
+            color: #fff;
+            margin-bottom: 18px;
+            margin-top: -8px;
+            background: linear-gradient(135deg, #4f8cff 60%, #2563eb 100%);
+            border-radius: 50%;
+            width: 85px;
+            height: 85px;
+            box-shadow: 0 4px 16px rgba(79,140,255,0.13), 0 1px 8px #fff8 inset;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid #fff;
+            /* Nuevo: animación de brillo */
+            animation: iconPulse 2.2s infinite cubic-bezier(.4,1.4,.6,1);
+            padding: 0;
+            position: relative;
+        }
+        @keyframes iconPulse {
+            0% { box-shadow: 0 4px 16px rgba(79,140,255,0.13), 0 1px 8px #fff8 inset; }
+            50% { box-shadow: 0 8px 32px rgba(79,140,255,0.18), 0 2px 16px #eaf0fb inset; }
+            100% { box-shadow: 0 4px 16px rgba(79,140,255,0.13), 0 1px 8px #fff8 inset; }
+        }
+        #loginForm .login-icon i {
+            color: #fff;
+            font-size: 1.2em;
+            filter: drop-shadow(0 2px 6px #2563eb88);
+            position: relative;
+            left: 4px; /* Mueve el icono ligeramente a la derecha */
+        }
+        #loginFormTitle {
+            font-size: 1.28em;
+            font-weight: bold;
+            color: #1a2233;
+            margin-bottom: 18px;
+            letter-spacing: 1px;
+            text-align: center;
+            /* Nuevo: subrayado decorativo */
+            position: relative;
+        }
+        #loginFormTitle::after {
+            content: "";
+            display: block;
+            width: 40px;
+            height: 3px;
+            border-radius: 2px;
+            background: linear-gradient(90deg, #4f8cff 60%, #2563eb 100%);
+            margin: 10px auto 0 auto;
+            opacity: 0.18;
         }
         #loginForm input {
-            width: 85%;
-            margin-bottom: 14px;
-            font-size: 1em;
-            border-radius: 6px;
-            border: 1.2px solid #bfc9d9;
+            width: 92%;
+            margin-bottom: 16px;
+            font-size: 1.09em;
+            border-radius: 8px;
+            border: 1.7px solid #bfc9d9;
             background: #f7faff;
-            transition: border 0.2s, box-shadow 0.2s;
+            transition: border 0.22s, box-shadow 0.22s, background 0.18s;
             box-shadow: 0 1px 4px rgba(79,140,255,0.04);
+            padding: 13px 16px;
+            /* Nuevo: icono de input */
+            background-repeat: no-repeat;
+            background-position: 12px center;
+            background-size: 1.2em;
+        }
+        #nombre {
+            background-image: url('data:image/svg+xml;utf8,<svg fill="rgb(79,140,255)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M224 256A128 128 0 1 0 224 0a128 128 0 1 0 0 256zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.7-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"/></svg>');
+        }
+        #nip {
+            background-image: url('data:image/svg+xml;utf8,<svg fill="rgb(79,140,255)" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><path d="M400 224h-24V144C376 64.5 311.5 0 232 0S88 64.5 88 144v80H64c-35.3 0-64 28.7-64 64v160c0 35.3 28.7 64 64 64h336c35.3 0 64-28.7 64-64V288c0-35.3-28.7-64-64-64zm-72 0H120V144c0-61.9 50.1-112 112-112s112 50.1 112 112v80z"/></svg>');
         }
         #loginForm input:focus {
-            border: 1.5px solid #4f8cff;
-            background: #f0f4ff;
-            box-shadow: 0 2px 8px rgba(79,140,255,0.10);
+            border: 2px solid #2563eb;
+            background: #e0eaff;
+            box-shadow: 0 2px 12px rgba(79,140,255,0.18);
         }
         #loginForm button {
-            width: 85%;
-            margin-top: 8px;
-            border-radius: 6px;
-            font-size: 1.08em;
-            background: #4f8cff;
-            transition: background 0.2s, transform 0.1s;
+            width: 92%;
+            margin-top: 12px;
+            border-radius: 8px;
+            font-size: 1.15em;
+            background: linear-gradient(90deg, #4f8cff 60%, #2563eb 100%);
+            transition: background 0.2s, transform 0.1s, box-shadow 0.18s;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(79,140,255,0.08);
+            /* Nuevo: efecto de sombra al pasar el mouse */
         }
         #loginForm button:hover {
-            background: #3b6ed6;
+            background: linear-gradient(90deg, #2563eb 60%, #4f8cff 100%);
             transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 4px 16px rgba(79,140,255,0.13);
+        }
+        #loginForm .login-footer {
+            margin-top: 20px;
+            font-size: 0.99em;
+            color: #6c7a99;
+            text-align: center;
+            opacity: 0.85;
+        }
+        #loginForm .login-decoration {
+            position: absolute;
+            left: 0; right: 0; bottom: -18px;
+            margin: auto;
+            width: 60px;
+            height: 6px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, #4f8cff 60%, #2563eb 100%);
+            opacity: 0.18;
+        }
+        #loginTitle {
+            display: none !important;
+        }
+        @media (max-width: 600px) {
+            #loginForm {
+                max-width: 98vw;
+                padding: 22px 6vw 18px 6vw;
+            }
         }
         /* ====== PANEL EMPLEADO ====== */
         #empleadoPanel .main-btns {
@@ -447,11 +586,9 @@
             background: #f8fafc;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-            margin: 18px 0;
+            margin: 18px auto; /* Cambia a auto para centrar */
             width: 100%;
             max-width: 600px;
-            margin-left: -20px;
-            margin-right: 0;
         }
         #seccionAmigoPaguitos h4,
         #seccionTarifario h4 {
@@ -477,6 +614,13 @@
                 padding: 12px 2vw;
             }
         }
+        @media (min-width: 901px) {
+            #seccionAmigoPaguitos,
+            #seccionTarifario {
+                margin-left: -260 !important;
+               
+            }
+        }
         /* ====== AVISOS EMPLEADO ====== */
         #seccionAvisosEmpleado {
             margin-left: -20px;
@@ -485,6 +629,11 @@
             #seccionAvisosEmpleado {
                 margin-left: 0 !important;
             }
+        }
+        /* Centrar y mayúsculas en la tabla de avisos de empleado */
+        #tablaAvisosEmpleado td {
+            text-align: center;
+            text-transform: uppercase;
         }
         @media (max-width: 900px) {
             .slidebar {
@@ -497,11 +646,11 @@
                 display: flex !important;
             }
         }
-        @media (min-width: 901px) {
-    #main-content {
-        margin-left: 260px !important;
-    }
-}
+                @media (min-width: 901px) {
+            #main-content.sidebar-visible { 
+                margin-left: 260px !important;
+            }
+        }
         .sidebar-toggle-btn {
             position: fixed;
             top: 18px;
@@ -557,6 +706,7 @@
         .sidebar-overlay.active {
             display: block;
         }
+                /* Evita el desplazamiento horizontal en móviles */
         html, body {
             max-width: 100vw;
             overflow-x: hidden;
@@ -604,6 +754,7 @@
             document.getElementById('empleadoPanel').style.display = rol === 'empleado' ? 'block' : 'none';
             document.getElementById('sidebarAdmin').style.display = rol === 'admin' ? 'flex' : 'none';
             document.getElementById('sidebarEmpleado').style.display = rol === 'empleado' ? 'flex' : 'none';
+            document.getElementById('main-content').classList.add('sidebar-visible');
             // Oculta los botones de cerrar sesión antiguos
             
         }
@@ -613,6 +764,7 @@
             document.getElementById('empleadoPanel').style.display = 'none';
             document.getElementById('sidebarAdmin').style.display = 'none';
             document.getElementById('sidebarEmpleado').style.display = 'none';
+            document.getElementById('main-content').classList.remove('sidebar-visible');
         }
 
         // --- Funciones de usuario y avisos ---
@@ -901,13 +1053,24 @@
             });
             document.getElementById('btnDescargarExcel').addEventListener('click', exportarChecadasCSV);
             // --- Avisos admin ---
-            document.getElementById('formAviso').addEventListener('submit', (e) => {
+            document.getElementById('formAviso').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const texto = document.getElementById('avisoTexto').value;
                 const rol = document.getElementById('rolDestino').value;
                 const sucursal = document.getElementById('sucursales').value;
-                document.getElementById('mensaje').textContent = `📣 Aviso enviado a ${rol} en ${sucursal}`;
-                e.target.reset();
+                // Inserta el aviso en Supabase
+                const { error } = await supabase.from('avisos').insert([{
+                    texto,
+                    rol,
+                    sucursal
+                }]);
+                if (error) {
+                    document.getElementById('mensaje').textContent = '❌ Error al crear aviso';
+                } else {
+                    document.getElementById('mensaje').textContent = `✅ Aviso enviado a ${rol} en ${sucursal}`;
+                    e.target.reset();
+                    cargarAvisos();
+                }
             });
             document.getElementById('btnBorrarAvisos').addEventListener('click', async () => {
                 if (!confirm('¿Seguro que deseas borrar todos los avisos?')) return;
@@ -1000,12 +1163,15 @@
             }
             secciones[id].style.display = 'block';
             if (id === 'verUsuarios') cargarUsuarios();
+            if (id === 'avisosEmpleado') cargarAvisos(); // <-- Agrega esta línea
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
+    <!-- Fondo de desenfoque detrás del login -->
+    <div id="login-bg-blur"></div>
     <!-- Botón hamburguesa para móvil -->
     <button class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Abrir menú">
         <i class="fas fa-bars"></i>
@@ -1079,9 +1245,17 @@
         </h2>
         <h3 id="bienvenida"></h3>
         <form id="loginForm">
-            <input type="text" id="nombre" placeholder="Nombre" required>
-            <input type="password" id="nip" placeholder="NIP" required>
+            <div class="login-icon">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div id="loginFormTitle">Acceso al Panel</div>
+            <input type="text" id="nombre" placeholder="Nombre de usuario" required autocomplete="username">
+            <input type="password" id="nip" placeholder="NIP" required autocomplete="current-password">
             <button type="submit">Entrar</button>
+            <div class="login-footer">
+                <span>¿Olvidaste tu NIP? Contacta a tu administrador.</span>
+            </div>
+            <div class="login-decoration"></div>
         </form>
 
         <!-- Panel Admin -->
@@ -1247,6 +1421,11 @@
         <div style="width:100%; display:flex; justify-content:center; margin:80px 0 36px 0;">
             <img src="https://upload.wikimedia.org/wikipedia/commons/a/ab/Telcel_logo_2022.svg" alt="Telcel" style="max-width:120px; height:auto; opacity:0.85;">
         </div>
+        <footer style="width:100%; text-align:center; color:#6c7a99; font-size:0.98em; margin-bottom:24px; margin-top:-24px; line-height:1.6; opacity:0.92;">
+            © 2025 Jeeapcel S.A. de C.V. Todos los derechos reservados.<br>
+            Se prohíbe la reproducción, modificación o distribución no autorizada de cualquier parte de este sitio.<br>
+            <span style="font-size:0.97em; color:#2563eb;">Desarrollado por Julio García para Jeeapcel S.A. de C.V.</span>
+        </footer>
     </div>
     <script type="module">
         // --- Funciones de autenticación y paneles ---
