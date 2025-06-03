@@ -792,10 +792,11 @@
         }
 
         sidebarToggleBtn.addEventListener('click', () => {
-            if (sidebarAdmin.style.display === 'flex') {
+            // Mostrar el sidebar que esté activo (display != 'none')
+            if (window.getComputedStyle(sidebarAdmin).display !== 'none') {
                 sidebarAdmin.classList.add('sidebar-mobile');
             }
-            if (sidebarEmpleado.style.display === 'flex') {
+            if (window.getComputedStyle(sidebarEmpleado).display !== 'none') {
                 sidebarEmpleado.classList.add('sidebar-mobile');
             }
             sidebarOverlay.classList.add('active');
