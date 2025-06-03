@@ -500,6 +500,48 @@
                 padding: 32px 2vw 28px 2vw !important; /* Más largo: padding vertical aumentado */
                 box-sizing: border-box;
             }
+            /* Tabla de avisos vertical en móvil */
+            #tablaAvisosEmpleado {
+                display: block;
+                width: 98vw !important;
+                max-width: 98vw !important;
+                border: none;
+                background: none;
+                box-shadow: none;
+            }
+            #tablaAvisosEmpleado tr {
+                display: flex;
+                flex-direction: column;
+                background: #fff;
+                border-radius: 10px;
+                margin-bottom: 14px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                padding: 10px 8px;
+                width: 96vw;
+                max-width: 96vw;
+            }
+            #tablaAvisosEmpleado th, #tablaAvisosEmpleado td {
+                display: block;
+                width: 100%;
+                text-align: left;
+                white-space: normal !important;
+                font-size: 1em;
+                padding: 4px 0;
+                border: none;
+            }
+            #tablaAvisosEmpleado th {
+                color: #2563eb;
+                font-weight: bold;
+                background: none;
+                padding-top: 0;
+                padding-bottom: 2px;
+            }
+            #tablaAvisosEmpleado td {
+                color: #222;
+                background: none;
+                text-transform: uppercase;
+                padding-bottom: 6px;
+            }
         }
         /* ====== PANEL EMPLEADO ====== */
         #empleadoPanel .main-btns {
@@ -884,8 +926,49 @@
         padding: 32px 2vw 28px 2vw !important; /* Más largo: padding vertical aumentado */
         box-sizing: border-box;
     }
+    /* Tabla de avisos vertical en móvil */
+    #tablaAvisosEmpleado {
+        display: block;
+        width: 98vw !important;
+        max-width: 98vw !important;
+        border: none;
+        background: none;
+        box-shadow: none;
+    }
+    #tablaAvisosEmpleado tr {
+        display: flex;
+        flex-direction: column;
+        background: #fff;
+        border-radius: 10px;
+        margin-bottom: 14px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        padding: 10px 8px;
+        width: 96vw;
+        max-width: 96vw;
+    }
+    #tablaAvisosEmpleado th, #tablaAvisosEmpleado td {
+        display: block;
+        width: 100%;
+        text-align: left;
+        white-space: normal !important;
+        font-size: 1em;
+        padding: 4px 0;
+        border: none;
+    }
+    #tablaAvisosEmpleado th {
+        color: #2563eb;
+        font-weight: bold;
+        background: none;
+        padding-top: 0;
+        padding-bottom: 2px;
+    }
+    #tablaAvisosEmpleado td {
+        color: #222;
+        background: none;
+        text-transform: uppercase;
+        padding-bottom: 6px;
+    }
 }
-
 /* ...existing code... */
     </style>
     <script type="module">
