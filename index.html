@@ -492,6 +492,21 @@
             }
             #main-content {
                 margin-left: 0 !important;
+                max-width: 100vw;
+                width: 100vw;
+                box-sizing: border-box;
+                padding-left: 0;
+                padding-right: 0;
+            }
+            .panel {
+                max-width: 98vw;
+                width: 98vw;
+                box-sizing: border-box;
+                padding-left: 2vw;
+                padding-right: 2vw;
+            }
+            html, body {
+                overflow-x: hidden;
             }
             .sidebar-toggle-btn {
                 display: flex !important;
@@ -506,43 +521,46 @@
             color: #fff;
             border: none;
             border-radius: 50%;
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             display: none;
             align-items: center;
             justify-content: center;
             box-shadow: 0 2px 8px rgba(31,38,135,0.18);
             cursor: pointer;
-            font-size: 1.7em;
+            font-size: 1.5em;
             transition: background 0.18s, transform 0.12s;
+            padding: 0;
         }
         .sidebar-toggle-btn:active {
             transform: scale(0.93);
         }
-        .slidebar.sidebar-mobile {
-            display: flex !important;
-            position: fixed;
-            left: 0;
-            top: 0;
-            width: 220px;
-            height: 100vh;
-            z-index: 300;
-            background: linear-gradient(180deg, #4f8cff 0%, #2563eb 100%);
-            animation: sidebarIn 0.18s;
-        }
-        @keyframes sidebarIn {
-            from { transform: translateX(-240px); opacity: 0.5; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.18);
-            z-index: 250;
-        }
-        .sidebar-overlay.active {
+        /* Hamburguesa personalizada */
+        .sidebar-toggle-btn .hamburger {
             display: block;
+            width: 22px;
+            height: 18px;
+            position: relative;
+        }
+        .sidebar-toggle-btn .hamburger span {
+            display: block;
+            position: absolute;
+            height: 3px;
+            width: 100%;
+            background: #fff;
+            border-radius: 2px;
+            opacity: 1;
+            left: 0;
+            transition: all 0.18s;
+        }
+        .sidebar-toggle-btn .hamburger span:nth-child(1) {
+            top: 0;
+        }
+        .sidebar-toggle-btn .hamburger span:nth-child(2) {
+            top: 7.5px;
+        }
+        .sidebar-toggle-btn .hamburger span:nth-child(3) {
+            top: 15px;
         }
     </style>
     <script type="module">
@@ -986,7 +1004,11 @@
 <body>
     <!-- Botón hamburguesa para móvil -->
     <button class="sidebar-toggle-btn" id="sidebarToggleBtn" aria-label="Abrir menú">
-        <i class="fas fa-bars"></i>
+        <span class="hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+        </span>
     </button>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
