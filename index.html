@@ -440,7 +440,22 @@
         let usuarioActual = null;
         let sucursalActual = null;
 
-        window.addEventListener('DOMContentLoaded', () => {
+        // Variables globales para los links
+        let linkReporteGlobal = '';
+        let linkInventarioGlobal = '';
+
+        async function cargarLinksGlobales() {
+            // Suponiendo que tienes una tabla 'config' con campos 'clave' y 'valor'
+            const { data, error } = await supabase.from('config').select('*').in('clave', ['linkReporte', 'linkInventario']);
+            if (data) {
+                data.forEach(row => {
+                    if (row.clave === 'linkReporte') linkReporteGlobal = row.valor;
+                    if (row.clave === 'linkInventario') linkInventarioGlobal = row.valor;
+                });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
             // Oculta los paneles y botones de cerrar sesión al cargar la página
             const adminPanel = document.getElementById('adminPanel');
             const empleadoPanel = document.getElementById('empleadoPanel');
@@ -657,18 +672,22 @@
                 e.target.reset();
             });
 
-            document.getElementById('formReporte').addEventListener('submit', (e) => {
+            document.getElementById('formReporte').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const link = document.getElementById('nuevoLink').value;
-                localStorage.setItem('linkReporte', link);
+                // Actualiza en Supabase
+                await supabase.from('config').upsert([{ clave: 'linkReporte', valor: link }], { onConflict: ['clave'] });
+                linkReporteGlobal = link;
                 mensaje.textContent = '🔗 Link actualizado correctamente';
             });
 
             // NUEVO: FORMULARIO INVENTARIO
-            document.getElementById('formInventario').addEventListener('submit', (e) => {
+            document.getElementById('formInventario').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const link = document.getElementById('nuevoLinkInventario').value;
-                localStorage.setItem('linkInventario', link);
+                // Actualiza en Supabase
+                await supabase.from('config').upsert([{ clave: 'linkInventario', valor: link }], { onConflict: ['clave'] });
+                linkInventarioGlobal = link;
                 mensaje.textContent = '📦 Link de inventario actualizado correctamente';
             });
 
@@ -841,9 +860,8 @@
 
             if (btnReportes) {
                 btnReportes.addEventListener('click', () => {
-                    const link = localStorage.getItem('linkReporte');
-                    if (link) {
-                        window.open(link, '_blank');
+                    if (linkReporteGlobal) {
+                        window.open(linkReporteGlobal, '_blank');
                     } else {
                         alert('No hay link de reportes configurado.');
                     }
@@ -851,9 +869,8 @@
             }
             if (btnInventario) {
                 btnInventario.addEventListener('click', () => {
-                    const link = localStorage.getItem('linkInventario');
-                    if (link) {
-                        window.open(link, '_blank');
+                    if (linkInventarioGlobal) {
+                        window.open(linkInventarioGlobal, '_blank');
                     } else {
                         alert('No hay link de inventario configurado.');
                     }
