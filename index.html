@@ -585,7 +585,22 @@
       box-sizing: border-box;
       overflow-y: auto;
     }
-  
+    #empleadoPanel::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 8px;
+      height: 100%;
+      background: linear-gradient(180deg, #ff9800 0%, #fffbe6 40%, #2d6cdf 100%);
+      border-top-right-radius: 6px;
+      border-bottom-right-radius: 6px;
+      z-index: 201;
+      opacity: 0.95;
+      pointer-events: none;
+      box-shadow: 2px 0 8px #ff980088;
+      transition: opacity 0.2s;
+    }
     #empleadoPanel.active::before {
       opacity: 0;
     }
@@ -651,6 +666,11 @@
       background-color: #ffebee; /* Rojo muy claro */
       color: #c62828; /* Rojo oscuro */
       border: 1px solid #ef9a9a; /* Borde rojo claro */
+    }
+    #empleadoPanel .checkin-status.en-comida {
+      background-color: #e3f2fd; /* Azul muy claro */
+      color: #1565c0; /* Azul oscuro */
+      border: 1px solid #90caf9; /* Borde azul claro */
     }
     #empleadoPanel .sidebar-buttons {
       width: 100%;
@@ -1381,75 +1401,107 @@
           empleadoPanel.style.display = 'flex';
           document.getElementById('adminContentBox').style.display = 'flex'; // Ocultar por defecto
           empleadoLoggedIn = true;
-          adminLoggedIn = false;
+            adminLoggedIn = false;
 
-          // --- LÓGICA MEJORADA PARA DETERMINAR ESTADO DE CHECK-IN ---
-          const hoyFechaStr = getFechaLocal();
-          const ayerDate = new Date();
-          ayerDate.setDate(ayerDate.getDate() - 1);
-          const ayerFechaStr = `${ayerDate.getFullYear()}-${(ayerDate.getMonth() + 1).toString().padStart(2, '0')}-${ayerDate.getDate().toString().padStart(2, '0')}`;
+            // --- LÓGICA MEJORADA PARA DETERMINAR ESTADO DE CHECK-IN SEGÚN ÚLTIMO REGISTRO ---
+            const hoyFechaStr = getFechaLocal();
+            const ayerDate = new Date();
+            ayerDate.setDate(ayerDate.getDate() - 1);
+            const ayerFechaStr = `${ayerDate.getFullYear()}-${(ayerDate.getMonth() + 1).toString().padStart(2, '0')}-${ayerDate.getDate().toString().padStart(2, '0')}`;
 
-          let relevantChecadas = [];
+            let relevantChecadas = [];
 
-          // Obtener checadas de hoy
-          const { data: checadasHoy, error: errorHoy } = await supabase
-            .from('checadas')
-            .select('tipo, hora, fecha')
-            .eq('usuario_id', empleadoId) // Usar empleadoId
-            .eq('fecha', hoyFechaStr);
+            // Obtener checadas de hoy (TURNO y COMIDA)
+            const { data: checadasHoy, error: errorHoy } = await supabase
+              .from('checadas')
+              .select('tipo, hora, fecha, t2')
+              .eq('usuario_id', empleadoId)
+              .eq('fecha', hoyFechaStr);
 
-          if (!errorHoy && checadasHoy) {
-            relevantChecadas.push(...checadasHoy);
-          } else if (errorHoy) {
-            console.error("Error al obtener checadas de hoy:", errorHoy);
-          }
+            if (!errorHoy && checadasHoy) {
+              relevantChecadas.push(...checadasHoy.filter(c => c.t2 === 'TURNO' || c.t2 === 'COMIDA'));
+            } else if (errorHoy) {
+              console.error("Error al obtener checadas de hoy:", errorHoy);
+            }
 
-          // Obtener checadas de ayer
-          const { data: checadasAyer, error: errorAyer } = await supabase
-            .from('checadas')
-            .select('tipo, hora, fecha')
-            .eq('usuario_id', empleadoId) // Usar empleadoId
-            .eq('fecha', ayerFechaStr);
+            // Obtener checadas de ayer (TURNO y COMIDA)
+            const { data: checadasAyer, error: errorAyer } = await supabase
+              .from('checadas')
+              .select('tipo, hora, fecha, t2')
+              .eq('usuario_id', empleadoId)
+              .eq('fecha', ayerFechaStr);
 
-          if (!errorAyer && checadasAyer) {
-            relevantChecadas.push(...checadasAyer);
-          } else if (errorAyer) {
-            console.error("Error al obtener checadas de ayer:", errorAyer);
-          }
-          
-          if (relevantChecadas.length > 0) {
-            const checadasConDateObj = relevantChecadas.map(checada => ({
+            if (!errorAyer && checadasAyer) {
+              relevantChecadas.push(...checadasAyer.filter(c => c.t2 === 'TURNO' || c.t2 === 'COMIDA'));
+            } else if (errorAyer) {
+              console.error("Error al obtener checadas de ayer:", errorAyer);
+            }
+
+            if (relevantChecadas.length > 0) {
+              const checadasConDateObj = relevantChecadas.map(checada => ({
               ...checada,
               dateTime: parseChecadaToDate(checada.fecha, checada.hora)
-            })).filter(c => c.dateTime !== null); // Filtrar las que no se pudieron parsear
+              })).filter(c => c.dateTime !== null);
 
-            if (checadasConDateObj.length > 0) {
-              checadasConDateObj.sort((a, b) => a.dateTime - b.dateTime); // Ordenar cronológicamente
-              const ultimaChecadaReal = checadasConDateObj[checadasConDateObj.length - 1];
+              if (checadasConDateObj.length > 0) {
+              checadasConDateObj.sort((a, b) => a.dateTime - b.dateTime);
+              const ultima = checadasConDateObj[checadasConDateObj.length - 1];
 
-              if (ultimaChecadaReal.tipo === 'entrada') {
-                actualizarEstadoCheckInVisual(true, ultimaChecadaReal.hora, ultimaChecadaReal.fecha);
-              } else if (ultimaChecadaReal.tipo === 'salida') {
+              if (ultima.tipo === 'salida' && ultima.t2 === 'TURNO') {
+                // Última es salida de TURNO: NO REALIZADO
                 actualizarEstadoCheckInVisual(false);
+              } else if (ultima.tipo === 'entrada' && ultima.t2 === 'TURNO') {
+                // Última es entrada de TURNO: REALIZADO
+                actualizarEstadoCheckInVisual(true, ultima.hora, ultima.fecha);
+              } else if (ultima.tipo === 'entrada' && ultima.t2 === 'COMIDA') {
+                // Última es entrada de COMIDA: EN COMIDA
+                const statusEl = document.getElementById('checkin-status');
+                let mensaje = 'CHECK IN: En comida';
+                if (ultima.hora) {
+                const dateObj = parseChecadaToDate(ultima.fecha, ultima.hora);
+                if (dateObj) {
+                  mensaje += ` ${formatDateToDisplayHora(dateObj)}`;
+                } else {
+                  mensaje += ` ${ultima.hora}`;
+                }
+                }
+                statusEl.textContent = mensaje;
+                statusEl.classList.remove('no-realizado', 'realizado');
+                statusEl.classList.add('realizado');
+              } else if (ultima.tipo === 'salida' && ultima.t2 === 'COMIDA') {
+                // Última es salida de COMIDA: buscar última entrada TURNO
+                let ultimaEntradaTurno = null;
+                for (let i = checadasConDateObj.length - 1; i >= 0; i--) {
+                const c = checadasConDateObj[i];
+                if (c.tipo === 'entrada' && c.t2 === 'TURNO') {
+                  ultimaEntradaTurno = c;
+                  break;
+                }
+                }
+                if (ultimaEntradaTurno) {
+                actualizarEstadoCheckInVisual(true, ultimaEntradaTurno.hora, ultimaEntradaTurno.fecha);
+                } else {
+                actualizarEstadoCheckInVisual(false);
+                }
               } else {
                 actualizarEstadoCheckInVisual(false);
               }
+              } else {
+              actualizarEstadoCheckInVisual(false);
+              }
             } else {
-               actualizarEstadoCheckInVisual(false); // No hay checadas parseables
+              actualizarEstadoCheckInVisual(false);
             }
-          } else {
-            // No hay checadas relevantes en hoy o ayer
-            actualizarEstadoCheckInVisual(false);
-          }
 
-          setTimeout(() => {
-            if (window.innerWidth > 700) {
+            setTimeout(() => {
+              if (window.innerWidth > 700) {
               empleadoPanel.classList.add('active');
-            } else {
+              } else {
               empleadoPanel.classList.remove('active');
               document.body.classList.remove('sidebar-open');
-            }
-          }, 10);
+              }
+            }, 10);
+
           // Mostrar botón hamburguesa solo para empleado en móvil
           hamburgerBtn.classList.add('visible');
           hamburgerBtn.style.display = '';
@@ -2167,81 +2219,103 @@
             return;
           }
           // Si es el botón de Checadas (índice 2)
-                 // ...existing code...
-                  // Si es el botón de Checadas (índice 2)
-                    if (idx === 2) {
-                    document.getElementById('adminContentBox').style.display = 'flex';
-                    const area = document.getElementById('adminContentArea');
-                    area.innerHTML = `
-                      <div style="text-align:center;color:#2266bb;font-weight:700;font-size:1.1rem;margin-bottom:1rem;">
-                      Filtro de checadas por rango de fechas
-                      </div>
-                      <form id="filtro-checadas-form" style="display:flex;gap:1.2rem;justify-content:center;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;">
-                      <label style="font-weight:600;color:#2266bb;">
-                        Desde
-                        <input type="date" id="checada-fecha-inicio" required style="margin-left:0.4rem;padding:0.4rem 0.7rem;border-radius:8px;border:1.5px solid #b3c6e0;font-size:1rem;">
-                      </label>
-                      <label style="font-weight:600;color:#2266bb;">
-                        Hasta
-                        <input type="date" id="checada-fecha-fin" required style="margin-left:0.4rem;padding:0.4rem 0.7rem;border-radius:8px;border:1.5px solid #b3c6e0;font-size:1rem;">
-                      </label>
-                      <button type="submit" style="padding:0.6rem 1.2rem;background:linear-gradient(90deg,#1656b7 0%,#2d6cdf 100%);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 2px 8px #2d6cdf22;">Buscar</button>
-                      <button type="button" id="exportar-csv-btn" style="padding:0.6rem 1.2rem;background:linear-gradient(90deg,#4fa3f7 0%,#2266bb 100%);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 2px 8px #2d6cdf22;">Exportar CSV</button>
-                      </form>
-                      <div id="checadas-resultados"></div>
-                    `;
+                // Si es el botón de Checadas (índice 2)
+                if (idx === 2) {
+                  document.getElementById('adminContentBox').style.display = 'flex';
+                  const area = document.getElementById('adminContentArea');
+                  area.innerHTML = `
+                  <div style="text-align:center;color:#2266bb;font-weight:700;font-size:1.1rem;margin-bottom:1rem;">
+                    Filtro de checadas por rango de fechas
+                  </div>
+                  <form id="filtro-checadas-form" style="display:flex;gap:1.2rem;justify-content:center;align-items:center;margin-bottom:1.2rem;flex-wrap:wrap;">
+                    <label style="font-weight:600;color:#2266bb;">
+                    Desde
+                    <input type="date" id="checada-fecha-inicio" required style="margin-left:0.4rem;padding:0.4rem 0.7rem;border-radius:8px;border:1.5px solid #b3c6e0;font-size:1rem;">
+                    </label>
+                    <label style="font-weight:600;color:#2266bb;">
+                    Hasta
+                    <input type="date" id="checada-fecha-fin" required style="margin-left:0.4rem;padding:0.4rem 0.7rem;border-radius:8px;border:1.5px solid #b3c6e0;font-size:1rem;">
+                    </label>
+                    <button type="submit" style="padding:0.6rem 1.2rem;background:linear-gradient(90deg,#1656b7 0%,#2d6cdf 100%);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 2px 8px #2d6cdf22;">Buscar</button>
+                    <button type="button" id="exportar-csv-btn" style="padding:0.6rem 1.2rem;background:linear-gradient(90deg,#4fa3f7 0%,#2266bb 100%);color:#fff;border:none;border-radius:10px;font-weight:700;font-size:1rem;cursor:pointer;box-shadow:0 2px 8px #2d6cdf22;">Exportar CSV</button>
+                  </form>
+                  <div id="checadas-resultados"></div>
+                  `;
 
-                    // Set default dates (last 7 days)
-                    const hoy = new Date();
-                    const hace7 = new Date();
-                    hace7.setDate(hoy.getDate() - 7);
-                    document.getElementById('checada-fecha-inicio').value = hace7.toISOString().slice(0, 10);
-                    document.getElementById('checada-fecha-fin').value = hoy.toISOString().slice(0, 10);
+                  // Set default dates (last 7 days)
+                  const hoy = new Date();
+                  const hace7 = new Date();
+                  hace7.setDate(hoy.getDate() - 7);
+                  document.getElementById('checada-fecha-inicio').value = hace7.toISOString().slice(0, 10);
+                  document.getElementById('checada-fecha-fin').value = hoy.toISOString().slice(0, 10);
 
-                    let checadasUltimaConsulta = [];
+                  let checadasUltimaConsulta = [];
 
-                    async function cargarChecadasPorRango(fechaInicio, fechaFin) {
-                      const resultadosDiv = document.getElementById('checadas-resultados');
-                      resultadosDiv.innerHTML = `<div style="text-align:center;color:#2266bb;font-weight:700;font-size:1.1rem;margin-bottom:1rem;">Cargando checadas...</div>`;
-                      // Query checadas en el rango
-                      const { data: checadas, error } = await supabase
+                  async function cargarChecadasPorRango(fechaInicio, fechaFin) {
+                    const resultadosDiv = document.getElementById('checadas-resultados');
+                    resultadosDiv.innerHTML = `<div style="text-align:center;color:#2266bb;font-weight:700;font-size:1.1rem;margin-bottom:1rem;">Cargando checadas...</div>`;
+                    // Query checadas en el rango
+                    const { data: checadas, error } = await supabase
                       .from('checadas')
-                      .select('id, nombre, fecha, hora, tipo')
+                      .select('id, nombre, sucursal, fecha, hora, tipo, t2')
                       .gte('fecha', fechaInicio)
-                      .lte('fecha', fechaFin)
-                      .order('fecha', { ascending: false })
-                      .order('hora', { ascending: false });
+                      .lte('fecha', fechaFin);
 
-                      checadasUltimaConsulta = checadas || [];
+                    // Ordenar: 1) fecha DESC, 2) nombre ASC, 3) hora DESC
+                    let checadasOrdenadas = (checadas || []).slice().sort((a, b) => {
+                      // 1. Fecha menor a mayor
+                      if (a.fecha !== b.fecha) {
+                        return a.fecha.localeCompare(b.fecha);
+                      }
+                      // 2. Usuario (nombre) ascendente
+                      if ((a.nombre || '').toLowerCase() !== (b.nombre || '').toLowerCase()) {
+                        return (a.nombre || '').toLowerCase().localeCompare((b.nombre || '').toLowerCase());
+                      }
+                      // 3. Hora menor a mayor
+                      // Usar parseChecadaToDate para comparar correctamente
+                      const dateA = parseChecadaToDate(a.fecha, a.hora);
+                      const dateB = parseChecadaToDate(b.fecha, b.hora);
+                      if (dateA && dateB) {
+                        return dateA - dateB;
+                      }
+                      // fallback por si no se puede parsear
+                      return (a.hora || '').localeCompare(b.hora || '');
+                    });
+                
 
-                      if (error) {
+                    checadasUltimaConsulta = checadasOrdenadas;
+
+                    if (error) {
                       resultadosDiv.innerHTML = `<div style="color:#d32f2f;text-align:center;">Error al cargar checadas.</div>`;
                       return;
-                      }
-                      if (!checadas || checadas.length === 0) {
+                    }
+                    if (!checadasOrdenadas || checadasOrdenadas.length === 0) {
                       resultadosDiv.innerHTML = `<div style="color:#888;text-align:center;">No hay checadas en ese rango.</div>`;
                       return;
-                      }
-                      resultadosDiv.innerHTML = `
+                    }
+                    resultadosDiv.innerHTML = `
                       <div style="overflow-x:auto; padding: 0.5rem;">
-                        <div style="max-height:420px;overflow-y:auto;border-radius:12px;box-shadow:0 4px 20px rgba(45,108,223,0.10);">
-                        <table style="width:100%; max-width:700px; margin:0 auto; border-collapse:separate; border-spacing:0; background:#fff; border-radius:12px; font-size: 0.97rem; min-width:540px; position:relative;">
-                          <thead style="position:sticky;top:0;z-index:3;background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%);">
+                      <div style="max-height:420px;overflow-y:auto;border-radius:12px;box-shadow:0 4px 20px rgba(45,108,223,0.10);">
+                        <table style="width:100%; max-width:900px; margin:0 auto; border-collapse:separate; border-spacing:0; background:#fff; border-radius:12px; font-size: 0.97rem; min-width:740px; position:relative;">
+                        <thead style="position:sticky;top:0;z-index:3;background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%);">
                           <tr>
-                            <th style="padding:1rem 0.8rem; text-align:left; border-bottom:2.5px solid #b3c6e0; border-top-left-radius:12px; min-width:120px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Usuario</th>
-                            <th style="padding:1rem 0.8rem; text-align:center; border-bottom:2.5px solid #b3c6e0; min-width:110px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Fecha</th>
-                            <th style="padding:1rem 0.8rem; text-align:center; border-bottom:2.5px solid #b3c6e0; min-width:100px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Hora</th>
-                            <th style="padding:1rem 0.8rem; text-align:center; border-bottom:2.5px solid #b3c6e0; border-top-right-radius:12px; min-width:100px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Acción</th>
+                          <th style="padding:1rem 0.8rem; text-align:left; border-bottom:2.5px solid #b3c6e0; border-top-left-radius:12px; min-width:120px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Usuario</th>
+                          <th style="padding:1rem 0.8rem; text-align:center; border-bottom:2.5px solid #b3c6e0; min-width:80px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Sucursal</th>
+                          <th style="padding:1rem 0.8rem; text-align:center; border-bottom:2.5px solid #b3c6e0; min-width:110px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Fecha</th>
+                          <th style="padding:1rem 0.8rem; text-align:center; border-bottom:2.5px solid #b3c6e0; min-width:100px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Hora</th>
+                          <th style="padding:1rem 0.8rem; text-align:center; border-bottom:2.5px solid #b3c6e0; min-width:100px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Acción</th>
+                          <th style="padding:1rem 0.8rem; text-align:center; border-bottom:2.5px solid #b3c6e0; border-top-right-radius:12px; min-width:100px; background: linear-gradient(135deg, #2d6cdf 0%, #4fa3f7 100%); color:#fff; position:sticky; top:0; z-index:4;">Tipo</th>
                           </tr>
-                          </thead>
-                          <tbody>
-                          ${checadas.map((c, index) => `
-                            <tr style="border-bottom:1px solid #f0f4f9; background-color: ${index % 2 === 0 ? '#fdfeff' : '#f7faff'}; transition: background-color 0.2s;">
+                        </thead>
+                        <tbody>
+                          ${checadasOrdenadas.map((c, index) => `
+                          <tr style="border-bottom:1px solid #f0f4f9; background-color: ${index % 2 === 0 ? '#fdfeff' : '#f7faff'}; transition: background-color 0.2s;">
                             <td style="padding:0.85rem 0.8rem; text-align:left; color: #33475b; font-weight:600;">${c.nombre}</td>
+                            <td style="padding:0.85rem 0.8rem; text-align:center; color: #50667d;">${c.sucursal || ''}</td>
                             <td style="padding:0.85rem 0.8rem; text-align:center; color: #50667d;">${new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-MX', {timeZone: 'UTC'})}</td>
                             <td style="padding:0.85rem 0.8rem; text-align:center; color: #50667d;">${formatDateToDisplayHora(parseChecadaToDate(c.fecha, c.hora))}</td>
                             <td style="padding:0.85rem 0.8rem; text-align:center;">
-                              <span style="
+                            <span style="
                               padding: 0.35rem 0.8rem;
                               border-radius: 16px;
                               font-size: 0.98rem;
@@ -2249,66 +2323,81 @@
                               color: #fff;
                               background-color:${c.tipo === 'entrada' ? '#388e3c' : '#d32f2f'};
                               box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-                              ">
+                            ">
                               ${c.tipo === 'entrada' ? 'Entrada' : 'Salida'}
-                              </span>
+                            </span>
                             </td>
-                            </tr>
+                            <td style="padding:0.85rem 0.8rem; text-align:center;">
+                            <span style="
+                              padding: 0.35rem 0.8rem;
+                              border-radius: 16px;
+                              font-size: 0.98rem;
+                              font-weight:700;
+                              color: #fff;
+                              background-color:${c.t2 === 'TURNO' ? '#1656b7' : (c.t2 === 'COMIDA' ? '#ff9800' : '#888')};
+                              box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+                            ">
+                              ${c.t2 ? c.t2 : ''}
+                            </span>
+                            </td>
+                          </tr>
                           `).join('')}
-                          </tbody>
+                        </tbody>
                         </table>
-                        </div>
                       </div>
-                      `;
-                    }
+                      </div>
+                    `;
+                  }
 
-                    // Cargar checadas por defecto (últimos 7 días)
-                    cargarChecadasPorRango(
-                      document.getElementById('checada-fecha-inicio').value,
-                      document.getElementById('checada-fecha-fin').value
-                    );
+                  // Cargar checadas por defecto (últimos 7 días)
+                  cargarChecadasPorRango(
+                    document.getElementById('checada-fecha-inicio').value,
+                    document.getElementById('checada-fecha-fin').value
+                  );
 
-                    document.getElementById('filtro-checadas-form').onsubmit = function(e) {
-                      e.preventDefault();
-                      const inicio = document.getElementById('checada-fecha-inicio').value;
-                      const fin = document.getElementById('checada-fecha-fin').value;
-                      if (!inicio || !fin) return;
-                      if (inicio > fin) {
+                  document.getElementById('filtro-checadas-form').onsubmit = function(e) {
+                    e.preventDefault();
+                    const inicio = document.getElementById('checada-fecha-inicio').value;
+                    const fin = document.getElementById('checada-fecha-fin').value;
+                    if (!inicio || !fin) return;
+                    if (inicio > fin) {
                       alert('La fecha de inicio no puede ser mayor que la fecha de fin.');
                       return;
-                      }
-                      cargarChecadasPorRango(inicio, fin);
-                    };
+                    }
+                    cargarChecadasPorRango(inicio, fin);
+                  };
 
-                    // Exportar a CSV
-                    document.getElementById('exportar-csv-btn').onclick = function() {
-                      if (!checadasUltimaConsulta || checadasUltimaConsulta.length === 0) {
+                  // Exportar a CSV
+                  document.getElementById('exportar-csv-btn').onclick = function() {
+                    if (!checadasUltimaConsulta || checadasUltimaConsulta.length === 0) {
                       alert('No hay datos para exportar.');
                       return;
-                      }
-                      // Encabezados
-                      const headers = ['Usuario', 'Fecha', 'Hora', 'Acción'];
-                      // Filas
-                      const rows = checadasUltimaConsulta.map(c => [
+                    }
+                    // Encabezados
+                    const headers = ['Usuario', 'Sucursal', 'Fecha', 'Hora', 'Acción', 'Tipo'];
+                    // Filas
+                    const rows = checadasUltimaConsulta.map(c => [
                       `"${c.nombre}"`,
+                      `"${c.sucursal || ''}"`,
                       `"${new Date(c.fecha + 'T00:00:00').toLocaleDateString('es-MX', {timeZone: 'UTC'})}"`,
                       `"${formatDateToDisplayHora(parseChecadaToDate(c.fecha, c.hora))}"`,
-                      `"${c.tipo === 'entrada' ? 'Entrada' : 'Salida'}"`
-                      ]);
-                      // Unir todo
-                      let csvContent = headers.join(',') + '\n' + rows.map(r => r.join(',')).join('\n');
-                      // Descargar
-                      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = 'checadas.csv';
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                    };
-                    }
+                      `"${c.tipo === 'entrada' ? 'Entrada' : 'Salida'}"`,
+                      `"${c.t2 ? c.t2 : ''}"`
+                    ]);
+                    // Unir todo
+                    let csvContent = headers.join(',') + '\n' + rows.map(r => r.join(',')).join('\n');
+                    // Descargar
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'checadas.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                  };
+                }
         // ...existing code...
           // ...otros botones admin aquí (índices 1, 2, 3)...
         });
@@ -2414,137 +2503,300 @@
       if (btnEntrada) {
         btnEntrada.addEventListener('click', async () => {
           if (!empleadoNombre || !empleadoSucursal) {
-            alert('Error: No se ha identificado al empleado o sucursal.');
-            return;
+        alert('Error: No se ha identificado al empleado o sucursal.');
+        return;
           }
 
-          const fecha = getFechaLocal();
-          const hora = getHoraLocal(); // HH:MM:SS
-          
-          navigator.geolocation.getCurrentPosition(async (pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const ubicacion = `${lat},${lng}`;
+          // Crear botones flotantes TURNO y COMIDA
+          let overlay = document.createElement('div');
+          overlay.style.position = 'fixed';
+          overlay.style.top = '0';
+          overlay.style.left = '0';
+          overlay.style.width = '100vw';
+          overlay.style.height = '100vh';
+          overlay.style.background = 'rgba(34,102,187,0.10)';
+          overlay.style.zIndex = '99999';
+          overlay.style.display = 'flex';
+          overlay.style.alignItems = 'center';
+          overlay.style.justifyContent = 'center';
 
-            const { error } = await supabase.from('checadas').insert([{
-              usuario_id: empleadoId, 
-              nombre: empleadoNombre,
-              sucursal: empleadoSucursal,
-              fecha: fecha,
-              hora: hora,
-              tipo: 'entrada',
-              ubicacion: ubicacion,
-            }]);
+          let box = document.createElement('div');
+          box.style.background = '#fff';
+          box.style.borderRadius = '18px';
+          box.style.boxShadow = '0 8px 32px #2d6cdf22, 0 2px 12px #ff980033';
+          box.style.padding = '2.2rem 2.5rem 2rem 2.5rem';
+          box.style.display = 'flex';
+          box.style.flexDirection = 'column';
+          box.style.alignItems = 'center';
+          box.style.gap = '1.5rem';
+          box.style.minWidth = '220px';
 
-            if (error) {
-              console.error("Error al registrar entrada:", error);
-              alert(`Error al registrar entrada: ${error.message}`);
-            } else {
-              actualizarEstadoCheckInVisual(true, hora, fecha); // Pasar fecha y hora actuales
-              alert('Entrada registrada correctamente.');
-            }
-          }, async () => { 
-            console.warn("No se pudo obtener la ubicación para la entrada.");
-            const { error } = await supabase.from('checadas').insert([{
-              usuario_id: empleadoId, 
-              nombre: empleadoNombre,
-              sucursal: empleadoSucursal,
-              fecha: fecha,
-              hora: hora,
-              tipo: 'entrada',
-              ubicacion: 'No disponible' 
-            }]);
-            if (error) {
-              console.error("Error al registrar entrada (sin ubicación):", error);
-              alert(`Error al registrar entrada: ${error.message}`);
-            } else {
-              actualizarEstadoCheckInVisual(true, hora, fecha); // Pasar fecha y hora actuales
-              alert('Entrada registrada correctamente (ubicación no disponible).');
-            }
-          });
+          let title = document.createElement('div');
+          title.textContent = 'Selecciona tipo de entrada';
+          title.style.fontWeight = '900';
+          title.style.fontSize = '1.18rem';
+          title.style.color = '#2266bb';
+          title.style.marginBottom = '0.7rem';
+          box.appendChild(title);
+
+          let btnTurno = document.createElement('button');
+          btnTurno.textContent = 'TURNO';
+          btnTurno.style.background = 'linear-gradient(90deg,#1656b7 0%,#2d6cdf 100%)';
+          btnTurno.style.color = '#fff';
+          btnTurno.style.border = 'none';
+          btnTurno.style.borderRadius = '12px';
+          btnTurno.style.fontWeight = '800';
+          btnTurno.style.fontSize = '1.15rem';
+          btnTurno.style.padding = '1.1rem 2.5rem';
+          btnTurno.style.cursor = 'pointer';
+          btnTurno.style.boxShadow = '0 2px 8px #2d6cdf22';
+          btnTurno.style.marginBottom = '0.5rem';
+
+          let btnComida = document.createElement('button');
+          btnComida.textContent = 'COMIDA';
+          btnComida.style.background = 'linear-gradient(90deg,#ff9800 0%,#fbc02d 100%)';
+          btnComida.style.color = '#fff';
+          btnComida.style.border = 'none';
+          btnComida.style.borderRadius = '12px';
+          btnComida.style.fontWeight = '800';
+          btnComida.style.fontSize = '1.15rem';
+          btnComida.style.padding = '1.1rem 2.5rem';
+          btnComida.style.cursor = 'pointer';
+          btnComida.style.boxShadow = '0 2px 8px #ff980033';
+
+          let btnCancelar = document.createElement('button');
+          btnCancelar.textContent = 'Cancelar';
+          btnCancelar.style.background = '#d32f2f';
+          btnCancelar.style.color = '#fff';
+          btnCancelar.style.border = 'none';
+          btnCancelar.style.borderRadius = '10px';
+          btnCancelar.style.fontWeight = '700';
+          btnCancelar.style.fontSize = '1rem';
+          btnCancelar.style.padding = '0.7rem 1.5rem';
+          btnCancelar.style.cursor = 'pointer';
+          btnCancelar.style.marginTop = '1.2rem';
+
+          box.appendChild(btnTurno);
+          box.appendChild(btnComida);
+          box.appendChild(btnCancelar);
+          overlay.appendChild(box);
+          document.body.appendChild(overlay);
+
+          function registrarEntrada(t2Value) {
+        const fecha = getFechaLocal();
+        const hora = getHoraLocal(); // HH:MM:SS
+
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const ubicacion = `${lat},${lng}`;
+
+          const { error } = await supabase.from('checadas').insert([{
+            usuario_id: empleadoId, 
+            nombre: empleadoNombre,
+            sucursal: empleadoSucursal,
+            fecha: fecha,
+            hora: hora,
+            tipo: 'entrada',
+            ubicacion: ubicacion,
+            t2: t2Value
+          }]);
+
+          if (error) {
+            console.error("Error al registrar entrada:", error);
+            alert(`Error al registrar entrada: ${error.message}`);
+          } else {
+            actualizarEstadoCheckInVisual(true, hora, fecha);
+            alert('Entrada registrada correctamente.');
+          }
+          document.body.removeChild(overlay);
+        }, async () => { 
+          console.warn("No se pudo obtener la ubicación para la entrada.");
+          const { error } = await supabase.from('checadas').insert([{
+            usuario_id: empleadoId, 
+            nombre: empleadoNombre,
+            sucursal: empleadoSucursal,
+            fecha: fecha,
+            hora: hora,
+            tipo: 'entrada',
+            ubicacion: 'No disponible',
+            t2: t2Value
+          }]);
+          if (error) {
+            console.error("Error al registrar entrada (sin ubicación):", error);
+            alert(`Error al registrar entrada: ${error.message}`);
+          } else {
+            actualizarEstadoCheckInVisual(true, hora, fecha);
+            alert('Entrada registrada correctamente (ubicación no disponible).');
+          }
+          document.body.removeChild(overlay);
+        });
+          }
+
+          btnTurno.onclick = () => registrarEntrada('TURNO');
+          btnComida.onclick = () => registrarEntrada('COMIDA');
+          btnCancelar.onclick = () => document.body.removeChild(overlay);
         });
       }
 
       if (btnSalida) {
         btnSalida.addEventListener('click', async () => {
           if (!empleadoNombre || !empleadoSucursal) {
-            alert('Error: No se ha identificado al empleado o sucursal.');
-            return;
+        alert('Error: No se ha identificado al empleado o sucursal.');
+        return;
           }
 
-          const fecha = getFechaLocal();
-          const hora = getHoraLocal(); // HH:MM:SS
+          // Crear overlay y botones flotantes TURNO y COMIDA
+          let overlay = document.createElement('div');
+          overlay.style.position = 'fixed';
+          overlay.style.top = '0';
+          overlay.style.left = '0';
+          overlay.style.width = '100vw';
+          overlay.style.height = '100vh';
+          overlay.style.background = 'rgba(34,102,187,0.10)';
+          overlay.style.zIndex = '99999';
+          overlay.style.display = 'flex';
+          overlay.style.alignItems = 'center';
+          overlay.style.justifyContent = 'center';
 
-          navigator.geolocation.getCurrentPosition(async (pos) => {
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            const ubicacion = `${lat},${lng}`;
+          let box = document.createElement('div');
+          box.style.background = '#fff';
+          box.style.borderRadius = '18px';
+          box.style.boxShadow = '0 8px 32px #2d6cdf22, 0 2px 12px #ff980033';
+          box.style.padding = '2.2rem 2.5rem 2rem 2.5rem';
+          box.style.display = 'flex';
+          box.style.flexDirection = 'column';
+          box.style.alignItems = 'center';
+          box.style.gap = '1.5rem';
+          box.style.minWidth = '220px';
 
-            const { error: errorChecada } = await supabase.from('checadas').insert([{
-              usuario_id: empleadoId, 
-              nombre: empleadoNombre,
-              sucursal: empleadoSucursal,
-              fecha: fecha,
-              hora: hora,
-              tipo: 'salida',
-              ubicacion: ubicacion,
-            }]);
+          let title = document.createElement('div');
+          title.textContent = 'Selecciona tipo de salida';
+          title.style.fontWeight = '900';
+          title.style.fontSize = '1.18rem';
+          title.style.color = '#2266bb';
+          title.style.marginBottom = '0.7rem';
+          box.appendChild(title);
 
-            if (errorChecada) {
-              console.error("Error al registrar salida:", errorChecada);
-              alert(`Error al registrar salida: ${errorChecada.message}`);
-            } else {
-              actualizarEstadoCheckInVisual(false); // No se necesita hora para "No realizado"
-              alert('Salida registrada correctamente.');
+          let btnTurno = document.createElement('button');
+          btnTurno.textContent = 'TURNO';
+          btnTurno.style.background = 'linear-gradient(90deg,#1656b7 0%,#2d6cdf 100%)';
+          btnTurno.style.color = '#fff';
+          btnTurno.style.border = 'none';
+          btnTurno.style.borderRadius = '12px';
+          btnTurno.style.fontWeight = '800';
+          btnTurno.style.fontSize = '1.15rem';
+          btnTurno.style.padding = '1.1rem 2.5rem';
+          btnTurno.style.cursor = 'pointer';
+          btnTurno.style.boxShadow = '0 2px 8px #2d6cdf22';
+          btnTurno.style.marginBottom = '0.5rem';
 
-              // NUEVO: Actualizar sucursal a null en la tabla usuarios
-              const { error: errorUpdateUsuario } = await supabase
-                .from('usuarios')
-                .update({ sucursal: null })
-                .eq('id', empleadoId);
+          let btnComida = document.createElement('button');
+          btnComida.textContent = 'COMIDA';
+          btnComida.style.background = 'linear-gradient(90deg,#ff9800 0%,#fbc02d 100%)';
+          btnComida.style.color = '#fff';
+          btnComida.style.border = 'none';
+          btnComida.style.borderRadius = '12px';
+          btnComida.style.fontWeight = '800';
+          btnComida.style.fontSize = '1.15rem';
+          btnComida.style.padding = '1.1rem 2.5rem';
+          btnComida.style.cursor = 'pointer';
+          btnComida.style.boxShadow = '0 2px 8px #ff980033';
 
-              if (errorUpdateUsuario) {
-                console.error("Error al actualizar sucursal del usuario:", errorUpdateUsuario);
-                // Opcional: informar al usuario si esta actualización falla, aunque la checada fue exitosa.
-                // alert(`Salida registrada, pero hubo un error al actualizar la sucursal: ${errorUpdateUsuario.message}`);
-              } else {
-                empleadoSucursal = ""; // Actualizar localmente también si es necesario para la UI
-              }
+          let btnCancelar = document.createElement('button');
+          btnCancelar.textContent = 'Cancelar';
+          btnCancelar.style.background = '#d32f2f';
+          btnCancelar.style.color = '#fff';
+          btnCancelar.style.border = 'none';
+          btnCancelar.style.borderRadius = '10px';
+          btnCancelar.style.fontWeight = '700';
+          btnCancelar.style.fontSize = '1rem';
+          btnCancelar.style.padding = '0.7rem 1.5rem';
+          btnCancelar.style.cursor = 'pointer';
+          btnCancelar.style.marginTop = '1.2rem';
+
+          box.appendChild(btnTurno);
+          box.appendChild(btnComida);
+          box.appendChild(btnCancelar);
+          overlay.appendChild(box);
+          document.body.appendChild(overlay);
+
+          function registrarSalida(t2Value, actualizarSucursalNull) {
+        const fecha = getFechaLocal();
+        const hora = getHoraLocal(); // HH:MM:SS
+
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const ubicacion = `${lat},${lng}`;
+
+          const { error: errorChecada } = await supabase.from('checadas').insert([{
+            usuario_id: empleadoId,
+            nombre: empleadoNombre,
+            sucursal: empleadoSucursal,
+            fecha: fecha,
+            hora: hora,
+            tipo: 'salida',
+            ubicacion: ubicacion,
+            t2: t2Value
+          }]);
+
+          if (errorChecada) {
+            console.error("Error al registrar salida:", errorChecada);
+            alert(`Error al registrar salida: ${errorChecada.message}`);
+          } else {
+            actualizarEstadoCheckInVisual(false);
+            alert('Salida registrada correctamente.');
+            if (actualizarSucursalNull) {
+          const { error: errorUpdateUsuario } = await supabase
+            .from('usuarios')
+            .update({ sucursal: null })
+            .eq('id', empleadoId);
+          if (errorUpdateUsuario) {
+            console.error("Error al actualizar sucursal del usuario:", errorUpdateUsuario);
+          } else {
+            empleadoSucursal = "";
+          }
             }
-          }, async () => { // Error al obtener ubicación o usuario no da permiso
-            console.warn("No se pudo obtener la ubicación para la salida.");
-             // Registrar salida sin ubicación
-            const { error } = await supabase.from('checadas').insert([{
-              usuario_id: empleadoId, // CORREGIDO: Usar empleadoId
-              nombre: empleadoNombre,
-              sucursal: empleadoSucursal,
-              fecha: fecha,
-              hora: hora,
-              tipo: 'salida',
-              ubicacion: 'No disponible'
-            }]);
-
-            if (error) {
-              console.error("Error al registrar salida (sin ubicación):", error);
-              alert(`Error al registrar salida: ${error.message}`);
-            } else {
-              actualizarEstadoCheckInVisual(false);
-              alert('Salida registrada correctamente (ubicación no disponible).');
-
-              // NUEVO: Actualizar sucursal a null en la tabla usuarios
-              const { error: errorUpdateUsuario } = await supabase
-                .from('usuarios')
-                .update({ sucursal: null })
-                .eq('id', empleadoId);
-
-              if (errorUpdateUsuario) {
-                console.error("Error al actualizar sucursal del usuario (sin ubicación):", errorUpdateUsuario);
-                // Opcional: informar al usuario
-              } else {
-                empleadoSucursal = ""; // Actualizar localmente
-              }
+          }
+          document.body.removeChild(overlay);
+        }, async () => {
+          // Error al obtener ubicación
+          const { error } = await supabase.from('checadas').insert([{
+            usuario_id: empleadoId,
+            nombre: empleadoNombre,
+            sucursal: empleadoSucursal,
+            fecha: fecha,
+            hora: hora,
+            tipo: 'salida',
+            ubicacion: 'No disponible',
+            t2: t2Value
+          }]);
+          if (error) {
+            console.error("Error al registrar salida (sin ubicación):", error);
+            alert(`Error al registrar salida: ${error.message}`);
+          } else {
+            actualizarEstadoCheckInVisual(false);
+            alert('Salida registrada correctamente (ubicación no disponible).');
+            if (actualizarSucursalNull) {
+          const { error: errorUpdateUsuario } = await supabase
+            .from('usuarios')
+            .update({ sucursal: null })
+            .eq('id', empleadoId);
+          if (errorUpdateUsuario) {
+            console.error("Error al actualizar sucursal del usuario (sin ubicación):", errorUpdateUsuario);
+          } else {
+            empleadoSucursal = "";
+          }
             }
-          });
+          }
+          document.body.removeChild(overlay);
+        });
+          }
+
+          btnTurno.onclick = () => registrarSalida('TURNO', true);
+          btnComida.onclick = () => registrarSalida('COMIDA', false);
+          btnCancelar.onclick = () => document.body.removeChild(overlay);
         });
       }
 
