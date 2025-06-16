@@ -236,7 +236,7 @@
       left: -242px; /* Deja 8px visibles */
       height: 100vh;
       width: 250px;
-      background: linear-gradient(135deg, #2266bb 0%, #2d6cdf 100%);
+      background: #0b4da2;
       color: #ffffff;
       box-shadow: 8px 0 32px #2d6cdf22; /* Sombra a la derecha */
       z-index: 9999; /* Sidebar SIEMPRE al frente de todo */
@@ -259,7 +259,7 @@
       top: 0;
       width: 8px;
       height: 100%;
-      background: linear-gradient(180deg, #ff9800 0%, #fffbe6 40%, #2d6cdf 100%);
+      background: #0b4da2;
       border-top-right-radius: 6px;
       border-bottom-right-radius: 6px;
       z-index: 201;
@@ -566,9 +566,9 @@
       display: flex;
       position: fixed;
       top: 0;
-      left: -242px;
+      left: -292px;
       height: 100vh;
-      width: 250px;
+      width: 300px;
       background: #0b4da2;
       color: #ffffff;
       box-shadow: 8px 0 32px #2d6cdf22;
@@ -2586,23 +2586,39 @@
       // Filtrar avisos no leídos
       const noLeidos = avisos.filter(a => !leidosIds.includes(a.id));
       if (noLeidos.length > 0) {
-        // Mostrar notificación visual
+        // Mostrar notificación visual con mejor aspecto e icono
         let notif = document.createElement('div');
         notif.id = "aviso-notif";
         notif.style.position = "fixed";
-        notif.style.top = "18px";
-        notif.style.right = "18px";
+        notif.style.top = "22px";
+        notif.style.right = "22px";
         notif.style.zIndex = "99999";
-        notif.style.background = "#ff9800";
+        notif.style.background = "#ff9800"; // Color sólido
         notif.style.color = "#fff";
-        notif.style.padding = "1.1rem 1.5rem";
-        notif.style.borderRadius = "14px";
-        notif.style.boxShadow = "0 4px 18px #ff980055";
-        notif.style.fontWeight = "800";
-        notif.style.fontSize = "1.1rem";
-        notif.style.letterSpacing = "1px";
+        notif.style.padding = "1.2rem 2.1rem 1.2rem 1.1rem";
+        notif.style.borderRadius = "18px";
+        notif.style.boxShadow = "0 6px 24px #ff980055, 0 1.5px 8px #ff980022";
+        notif.style.fontWeight = "900";
+        notif.style.fontSize = "1.13rem";
+        notif.style.letterSpacing = "1.1px";
         notif.style.cursor = "pointer";
-        notif.innerHTML = `Tienes ${noLeidos.length} aviso(s) sin leer. <span style="text-decoration:underline;">Ver avisos</span>`;
+        notif.style.display = "flex";
+        notif.style.alignItems = "center";
+        notif.style.gap = "1.1rem";
+        notif.style.border = "2.5px solid #ff9800";
+        notif.innerHTML = `
+          <span style="display:flex;align-items:center;justify-content:center;background:#fff3e0;border-radius:50%;width:38px;height:38px;box-shadow:0 2px 8px #ff980022;margin-right:0.5rem;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+              <path d="M12 9v4" stroke="#ff9800" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="12" cy="17" r="1.3" fill="#ff9800"/>
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" stroke="#ff9800" stroke-width="2"/>
+            </svg>
+          </span>
+          <span>
+            Tienes <b>${noLeidos.length}</b> aviso(s) sin leer.<br>
+            <span style="text-decoration:underline;font-weight:700;">Ver avisos</span>
+          </span>
+        `;
         notif.onclick = function() {
           // Simula click en botón de avisos
           document.querySelectorAll('#empleadoPanel .sidebar-btn')[2].click();
