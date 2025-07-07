@@ -2618,7 +2618,7 @@
     return;
   }
   const distancia = distanciaMetros(lat, lng, ubicacionSucursal.lat, ubicacionSucursal.lng);
-  if (distancia > 50) { // 50 metros de tolerancia
+  if (distancia > 100) { // 50 metros de tolerancia
     alert('No estás en tu sucursal. Debes estar en tu lugar de trabajo para registrar tu entrada.');
     document.body.removeChild(overlay);
     return;
@@ -2767,7 +2767,7 @@
     return;
   }
   const distancia = distanciaMetros(lat, lng, ubicacionSucursal.lat, ubicacionSucursal.lng);
-  if (distancia > 50) { // 50 metros de tolerancia
+  if (distancia > 100) { // 50 metros de tolerancia
     alert('No estás en tu sucursal. Debes estar en tu lugar de trabajo para registrar tu salida.');
     document.body.removeChild(overlay);
     return;
