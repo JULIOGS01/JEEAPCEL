@@ -4,6 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jeeapcel - Login</title>
+    <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self'; 
+    script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://quickchart.io; 
+    connect-src 'self' https://mubtfuksnxtbjxrrwzqh.supabase.co https://quickchart.io; 
+    img-src 'self' data: https: blob:; 
+    style-src 'self' 'unsafe-inline'; 
+    frame-src https://docs.google.com https://forms.gle;
+    object-src 'none';
+    base-uri 'self';
+  ">
   <style>
     body {
       background: #f7faff;
@@ -3049,7 +3059,11 @@
 
     // ...existing code...
   });
+if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+    location.replace(`https:${location.href.substring(location.protocol.length)}`);
+}
 </script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
 </body>
 </html>
