@@ -2529,6 +2529,32 @@
         return;
           }
 
+          // --- FILTRO: Revisar si ya hay una entrada en los últimos 30 minutos ---
+          const ahora = new Date();
+          const hace30min = new Date(ahora.getTime() - 30 * 60 * 1000);
+
+          // Buscar checadas de entrada de este usuario en los últimos 2 días (por si cruza medianoche)
+          const { data: checadasRecientes, error: errorChecadas } = await supabase
+        .from('checadas')
+        .select('fecha, hora, tipo')
+        .eq('usuario_id', empleadoId)
+        .eq('tipo', 'entrada')
+        .order('fecha', { ascending: false })
+        .order('hora', { ascending: false })
+        .limit(10);
+
+          if (!errorChecadas && checadasRecientes && checadasRecientes.length > 0) {
+        // Buscar si alguna entrada fue en los últimos 30 minutos
+        const entradaReciente = checadasRecientes.find(c => {
+          const entradaDate = parseChecadaToDate(c.fecha, c.hora);
+          return entradaDate && entradaDate > hace30min;
+        });
+        if (entradaReciente) {
+          alert('Ya registraste una entrada en los últimos 30 minutos. Espera antes de registrar otra.');
+          return;
+        }
+          }
+
           // Crear botones flotantes TURNO y COMIDA
           let overlay = document.createElement('div');
           overlay.style.position = 'fixed';
@@ -2609,40 +2635,40 @@
         const hora = getHoraLocal(); // HH:MM:SS
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
-  const lat = pos.coords.latitude;
-  const lng = pos.coords.longitude;
-  const ubicacionSucursal = SUCURSALES_UBICACION[empleadoSucursal];
-  if (!ubicacionSucursal) {
-    alert('No hay ubicación registrada para tu sucursal.');
-    document.body.removeChild(overlay);
-    return;
-  }
-  const distancia = distanciaMetros(lat, lng, ubicacionSucursal.lat, ubicacionSucursal.lng);
-  if (distancia > 100) { // 50 metros de tolerancia
-    alert('No estás en tu sucursal. Debes estar en tu lugar de trabajo para registrar tu entrada.');
-    document.body.removeChild(overlay);
-    return;
-  }
-  const ubicacion = `${lat},${lng}`;
-  const { error } = await supabase.from('checadas').insert([{
-    usuario_id: empleadoId, 
-    nombre: empleadoNombre,
-    sucursal: empleadoSucursal,
-    fecha: fecha,
-    hora: hora,
-    tipo: 'entrada',
-    ubicacion: ubicacion,
-    t2: t2Value
-  }]);
-  if (error) {
-    console.error("Error al registrar entrada:", error);
-    alert(`Error al registrar entrada: ${error.message}`);
-  } else {
-    actualizarEstadoCheckInVisual(true, hora, fecha);
-    alert('Entrada registrada correctamente.');
-  }
-  document.body.removeChild(overlay);
-}, async () => { 
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const ubicacionSucursal = SUCURSALES_UBICACION[empleadoSucursal];
+          if (!ubicacionSucursal) {
+            alert('No hay ubicación registrada para tu sucursal.');
+            document.body.removeChild(overlay);
+            return;
+          }
+          const distancia = distanciaMetros(lat, lng, ubicacionSucursal.lat, ubicacionSucursal.lng);
+          if (distancia > 100) { // 50 metros de tolerancia
+            alert('No estás en tu sucursal. Debes estar en tu lugar de trabajo para registrar tu entrada.');
+            document.body.removeChild(overlay);
+            return;
+          }
+          const ubicacion = `${lat},${lng}`;
+          const { error } = await supabase.from('checadas').insert([{
+            usuario_id: empleadoId, 
+            nombre: empleadoNombre,
+            sucursal: empleadoSucursal,
+            fecha: fecha,
+            hora: hora,
+            tipo: 'entrada',
+            ubicacion: ubicacion,
+            t2: t2Value
+          }]);
+          if (error) {
+            console.error("Error al registrar entrada:", error);
+            alert(`Error al registrar entrada: ${error.message}`);
+          } else {
+            actualizarEstadoCheckInVisual(true, hora, fecha);
+            alert('Entrada registrada correctamente.');
+          }
+          document.body.removeChild(overlay);
+        }, async () => { 
           console.warn("No se pudo obtener la ubicación para la entrada.");
           const { error } = await supabase.from('checadas').insert([{
             usuario_id: empleadoId, 
@@ -2665,8 +2691,21 @@
         });
           }
 
-          btnTurno.onclick = () => registrarEntrada('TURNO');
-          btnComida.onclick = () => registrarEntrada('COMIDA');
+          let entradaProcesando = false;
+          btnTurno.onclick = () => {
+        if (entradaProcesando) return;
+        entradaProcesando = true;
+        btnTurno.disabled = true;
+        btnComida.disabled = true;
+        registrarEntrada('TURNO');
+          };
+          btnComida.onclick = () => {
+        if (entradaProcesando) return;
+        entradaProcesando = true;
+        btnTurno.disabled = true;
+        btnComida.disabled = true;
+        registrarEntrada('COMIDA');
+          };
           btnCancelar.onclick = () => document.body.removeChild(overlay);
         });
       }
@@ -2676,6 +2715,33 @@
           if (!empleadoNombre || !empleadoSucursal) {
         alert('Error: No se ha identificado al empleado o sucursal.');
         return;
+          }
+
+          // --- FILTRO: Revisar si ya hay una salida en los últimos 30 minutos ---
+          const fechaHoy = getFechaLocal();
+          const ahora = new Date();
+          const hace30min = new Date(ahora.getTime() - 30 * 60 * 1000);
+
+          // Buscar checadas de salida de este usuario en los últimos 2 días (por si cruza medianoche)
+          const { data: checadasRecientes, error: errorChecadas } = await supabase
+        .from('checadas')
+        .select('fecha, hora, tipo')
+        .eq('usuario_id', empleadoId)
+        .eq('tipo', 'salida')
+        .order('fecha', { ascending: false })
+        .order('hora', { ascending: false })
+        .limit(10);
+
+          if (!errorChecadas && checadasRecientes && checadasRecientes.length > 0) {
+        // Buscar si alguna salida fue en los últimos 30 minutos
+        const salidaReciente = checadasRecientes.find(c => {
+          const salidaDate = parseChecadaToDate(c.fecha, c.hora);
+          return salidaDate && salidaDate > hace30min;
+        });
+        if (salidaReciente) {
+          alert('Ya registraste una salida en los últimos 30 minutos. Espera antes de registrar otra.');
+          return;
+        }
           }
 
           // Crear overlay y botones flotantes TURNO y COMIDA
@@ -2758,46 +2824,46 @@
         const hora = getHoraLocal(); // HH:MM:SS
 
         navigator.geolocation.getCurrentPosition(async (pos) => {
-  const lat = pos.coords.latitude;
-  const lng = pos.coords.longitude;
-  const ubicacionSucursal = SUCURSALES_UBICACION[empleadoSucursal];
-  if (!ubicacionSucursal) {
-    alert('No hay ubicación registrada para tu sucursal.');
-    document.body.removeChild(overlay);
-    return;
-  }
-  const distancia = distanciaMetros(lat, lng, ubicacionSucursal.lat, ubicacionSucursal.lng);
-  if (distancia > 100) { // 50 metros de tolerancia
-    alert('No estás en tu sucursal. Debes estar en tu lugar de trabajo para registrar tu salida.');
-    document.body.removeChild(overlay);
-    return;
-  }
-  const ubicacion = `${lat},${lng}`;
-  const { error } = await supabase.from('checadas').insert([{
-    usuario_id: empleadoId, 
-    nombre: empleadoNombre,
-    sucursal: empleadoSucursal,
-    fecha: fecha,
-    hora: hora,
-    tipo: 'salida',
-    ubicacion: ubicacion,
-    t2: t2Value
-  }]);
-  if (error) {
-    console.error("Error al registrar salida:", error);
-    alert(`Error al registrar salida: ${error.message}`);
-  } else {
-    actualizarEstadoCheckInVisual(false);
-    alert('Salida registrada correctamente.');
-    if (actualizarSucursalNull){
-    const { error: errorUpdateUsuario } = await supabase
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          const ubicacionSucursal = SUCURSALES_UBICACION[empleadoSucursal];
+          if (!ubicacionSucursal) {
+            alert('No hay ubicación registrada para tu sucursal.');
+            document.body.removeChild(overlay);
+            return;
+          }
+          const distancia = distanciaMetros(lat, lng, ubicacionSucursal.lat, ubicacionSucursal.lng);
+          if (distancia > 100) { // 50 metros de tolerancia
+            alert('No estás en tu sucursal. Debes estar en tu lugar de trabajo para registrar tu salida.');
+            document.body.removeChild(overlay);
+            return;
+          }
+          const ubicacion = `${lat},${lng}`;
+          const { error } = await supabase.from('checadas').insert([{
+            usuario_id: empleadoId, 
+            nombre: empleadoNombre,
+            sucursal: empleadoSucursal,
+            fecha: fecha,
+            hora: hora,
+            tipo: 'salida',
+            ubicacion: ubicacion,
+            t2: t2Value
+          }]);
+          if (error) {
+            console.error("Error al registrar salida:", error);
+            alert(`Error al registrar salida: ${error.message}`);
+          } else {
+            actualizarEstadoCheckInVisual(false);
+            alert('Salida registrada correctamente.');
+            if (actualizarSucursalNull){
+          const { error: errorUpdateUsuario } = await supabase
             .from('usuarios')
             .update({ sucursal: null })
             .eq('id', empleadoId);
-    }
-  }
-  document.body.removeChild(overlay);
-}, async () => { 
+            }
+          }
+          document.body.removeChild(overlay);
+        }, async () => { 
           // Error al obtener ubicación
           const { error } = await supabase.from('checadas').insert([{
             usuario_id: empleadoId,
@@ -2830,9 +2896,21 @@
           document.body.removeChild(overlay);
         });
           }
-
-          btnTurno.onclick = () => registrarSalida('TURNO', true);
-          btnComida.onclick = () => registrarSalida('COMIDA', false);
+          let salidaProcesando = false;
+          btnTurno.onclick = () => {
+        if (salidaProcesando) return;
+        salidaProcesando = true;
+        btnTurno.disabled = true;
+        btnComida.disabled = true;
+        registrarSalida('TURNO', true);
+          };
+          btnComida.onclick = () => {
+        if (salidaProcesando) return;
+        salidaProcesando = true;
+        btnTurno.disabled = true;
+        btnComida.disabled = true;
+        registrarSalida('COMIDA', false);
+          };
           btnCancelar.onclick = () => document.body.removeChild(overlay);
         });
       }
